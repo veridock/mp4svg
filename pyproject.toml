@@ -26,7 +26,7 @@ classifiers = [
 packages = [{include = "mp4svg", from = "src"}]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.8.1"
 opencv-python = "^4.8.0"
 numpy = "^1.24.0"
 Pillow = "^10.0.0"

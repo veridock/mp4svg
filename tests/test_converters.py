@@ -8,7 +8,7 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 import numpy as np
 
-from src.mp4svg import (
+from mp4svg import (
     ASCII85SVGConverter, PolyglotSVGConverter, 
     SVGVectorFrameConverter, QRCodeSVGConverter,
     HybridSVGConverter, EncodingError, DecodingError
