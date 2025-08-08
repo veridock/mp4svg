@@ -277,8 +277,20 @@ class ASCII85SVGConverter(BaseConverter):
                 videoElement.src = videoUrl;
                 videoElement.controls = true;
                 videoElement.autoplay = true;
-                videoElement.style.width = '100%';
-                videoElement.style.height = '100%';
+                
+                // Set styles safely - check if style property exists
+                if (videoElement.style) {{
+                    videoElement.style.width = '100%';
+                    videoElement.style.height = '100%';
+                    videoElement.style.objectFit = 'contain';
+                }} else {{
+                    // Fallback: set attributes directly
+                    videoElement.setAttribute('width', '100%');
+                    videoElement.setAttribute('height', '100%');
+                }}
+                
+                console.log('Created video element:', videoElement);
+                console.log('Video blob URL:', videoUrl);
                 
                 video.appendChild(videoElement);
                 
