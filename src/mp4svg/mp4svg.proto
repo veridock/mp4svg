@@ -1,0 +1,197 @@
+syntax = "proto3";
+
+package mp4svg;
+
+// MP4SVG Video Conversion Service
+service MP4SVGService {
+    // Convert MP4 video to SVG using specified method
+    rpc ConvertVideo(ConvertVideoRequest) returns (ConvertVideoResponse);
+    
+    // Extract MP4 video from SVG file
+    rpc ExtractVideo(ExtractVideoRequest) returns (ExtractVideoResponse);
+    
+    // Validate SVG file and detect mp4svg format
+    rpc ValidateSVG(ValidateSVGRequest) returns (ValidateSVGResponse);
+    
+    // Validate conversion roundtrip integrity
+    rpc ValidateIntegrity(ValidateIntegrityRequest) returns (ValidateIntegrityResponse);
+    
+    // List available conversion methods
+    rpc ListConverters(ListConvertersRequest) returns (ListConvertersResponse);
+    
+    // Get server information
+    rpc GetServerInfo(GetServerInfoRequest) returns (GetServerInfoResponse);
+    
+    // Stream conversion progress (for long operations)
+    rpc ConvertVideoStream(ConvertVideoRequest) returns (stream ConvertVideoProgress);
+}
+
+// Conversion request
+message ConvertVideoRequest {
+    string input_path = 1;
+    string output_path = 2;
+    string method = 3;  // ascii85, polyglot, vector, qrcode, hybrid
+    ConversionOptions options = 4;
+}
+
+// Conversion options for different methods
+message ConversionOptions {
+    // QR Code options
+    int32 chunk_size = 1;
+    
+    // Vector options
+    int32 max_frames = 2;
+    double edge_threshold = 3;
+    
+    // Polyglot options
+    bool pdf = 4;
+    
+    // General options
+    bool include_metadata = 5;
+}
+
+// Conversion response
+message ConvertVideoResponse {
+    bool success = 1;
+    string message = 2;
+    string output_path = 3;
+    int64 input_size_bytes = 4;
+    int64 output_size_bytes = 5;
+    double compression_ratio = 6;
+    string method_used = 7;
+    double processing_time_seconds = 8;
+}
+
+// Conversion progress (for streaming)
+message ConvertVideoProgress {
+    string stage = 1;
+    double progress_percent = 2;
+    string message = 3;
+    bool completed = 4;
+}
+
+// Extraction request
+message ExtractVideoRequest {
+    string input_path = 1;
+    string output_path = 2;
+    string method = 3;  // Optional - auto-detect if empty
+}
+
+// Extraction response
+message ExtractVideoResponse {
+    bool success = 1;
+    string message = 2;
+    string output_path = 3;
+    int64 output_size_bytes = 4;
+    string method_detected = 5;
+    double processing_time_seconds = 6;
+}
+
+// SVG validation request
+message ValidateSVGRequest {
+    string file_path = 1;
+}
+
+// SVG validation response
+message ValidateSVGResponse {
+    bool is_valid = 1;
+    string detected_format = 2;
+    repeated string errors = 3;
+    repeated string warnings = 4;
+    SVGMetadata metadata = 5;
+}
+
+// SVG metadata
+message SVGMetadata {
+    int32 width = 1;
+    int32 height = 2;
+    int64 file_size_bytes = 3;
+    string format_version = 4;
+    map<string, string> custom_attributes = 5;
+}
+
+// Integrity validation request
+message ValidateIntegrityRequest {
+    string original_path = 1;
+    string svg_path = 2;
+    string method = 3;
+}
+
+// Integrity validation response
+message ValidateIntegrityResponse {
+    bool integrity_valid = 1;
+    string message = 2;
+    double similarity_score = 3;  // 0.0 to 1.0
+    IntegrityMetrics metrics = 4;
+}
+
+// Integrity metrics
+message IntegrityMetrics {
+    bool checksums_match = 1;
+    bool sizes_match = 2;
+    int64 original_size_bytes = 3;
+    int64 extracted_size_bytes = 4;
+    string original_checksum = 5;
+    string extracted_checksum = 6;
+}
+
+// List converters request
+message ListConvertersRequest {
+    // Empty request
+}
+
+// List converters response
+message ListConvertersResponse {
+    repeated ConverterInfo converters = 1;
+    int32 total_count = 2;
+}
+
+// Converter information
+message ConverterInfo {
+    string name = 1;
+    string description = 2;
+    repeated string supported_operations = 3;  // convert, extract
+    bool supports_streaming = 4;
+    ConverterCapabilities capabilities = 5;
+}
+
+// Converter capabilities
+message ConverterCapabilities {
+    bool supports_extraction = 1;
+    bool supports_metadata = 2;
+    bool supports_thumbnails = 3;
+    int32 max_file_size_mb = 4;
+    repeated string supported_formats = 5;  // MP4, AVI, etc.
+}
+
+// Server info request
+message GetServerInfoRequest {
+    // Empty request
+}
+
+// Server info response
+message GetServerInfoResponse {
+    string server_name = 1;
+    string version = 2;
+    string build_time = 3;
+    repeated string supported_formats = 4;
+    ServerCapabilities capabilities = 5;
+    ServerStats stats = 6;
+}
+
+// Server capabilities
+message ServerCapabilities {
+    bool supports_streaming = 1;
+    bool supports_batch_processing = 2;
+    int32 max_concurrent_jobs = 3;
+    int64 max_file_size_bytes = 4;
+}
+
+// Server statistics
+message ServerStats {
+    int64 total_conversions = 1;
+    int64 total_extractions = 2;
+    int64 total_validations = 3;
+    double uptime_seconds = 4;
+    int32 active_jobs = 5;
+}

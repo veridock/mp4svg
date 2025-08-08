@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mp4svg"
-version = "1.0.2"
+version = "1.0.3"
 description = "Convert MP4 videos to SVG containers using multiple encoding methods"
 authors = ["Tom Sapletta <info@softreck.dev>"]
 readme = "README.md"
@@ -26,16 +26,21 @@ classifiers = [
 packages = [{include = "mp4svg", from = "src"}]
 
 [tool.poetry.dependencies]
-python = "^3.8.1"
+python = ">=3.8.1"
 opencv-python = "^4.8.0"
 numpy = "^1.24.0"
 Pillow = "^10.0.0"
-qrcode = {extras = ["pil"], version = "^7.4.0"}
+qrcode = "^7.4.0"
 lxml = "^4.9.0"
 fastapi = "^0.104.0"
-uvicorn = {extras = ["standard"], version = "^0.24.0"}
+uvicorn = "^0.24.0"
 python-multipart = "^0.0.6"
-pydantic = "^2.4.0"
+pydantic = "^2.5.0"
+mcp = "^1.0.0"
+mcp-client = "^1.0.0"
+grpcio = "^1.60.0"
+grpcio-tools = "^1.60.0"
+protobuf = "^4.25.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
@@ -56,6 +61,10 @@ twine = "^4.0.0"
 mp4svg = "mp4svg.cli:main"
 mp4svg-shell = "mp4svg.shell:main"
 mp4svg-api = "mp4svg.api_server:main"
+mp4svg-mcp-server = "mp4svg.mcp_server:main"
+mp4svg-mcp-client = "mp4svg.mcp_client:main"
+mp4svg-grpc-server = "mp4svg.grpc_server:main"
+mp4svg-grpc-client = "mp4svg.grpc_client:main"
 
 [build-system]
 requires = ["poetry-core"]
