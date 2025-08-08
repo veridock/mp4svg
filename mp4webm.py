@@ -42,7 +42,7 @@ def calculate_frame_similarity(frame1, frame2):
     return similarity
 
 
-def analyze_frame_changes(mp4_path, similarity_threshold=0.98, min_fps=None, fast_mode=False):
+def analyze_frame_changes(mp4_path, similarity_threshold=0.98, min_fps=None, fast_mode=False, ultra_fast=False):
     """
     Analyze video for real frame changes and timing with performance optimizations.
     
@@ -51,6 +51,7 @@ def analyze_frame_changes(mp4_path, similarity_threshold=0.98, min_fps=None, fas
         similarity_threshold: Threshold for frame similarity (0.0-1.0)
         min_fps: Minimum FPS to maintain (forces frame inclusion)
         fast_mode: Skip detailed analysis, use fast duplicate detection
+        ultra_fast: Use 80% resolution reduction for maximum speed analysis
     
     Returns:
         List of unique frames with their timing information
@@ -61,6 +62,8 @@ def analyze_frame_changes(mp4_path, similarity_threshold=0.98, min_fps=None, fas
         print(f"⚡ Minimum FPS: {min_fps}")
     if fast_mode:
         print(f"🚀 Fast mode: Early duplicate detection enabled")
+    if ultra_fast:
+        print(f"🚀 Ultra-fast mode: 80% resolution reduction for maximum speed analysis")
     
     cap = cv2.VideoCapture(mp4_path)
     
@@ -105,7 +108,12 @@ def analyze_frame_changes(mp4_path, similarity_threshold=0.98, min_fps=None, fas
             print(f"⚡ Force include frame at {current_time:.2f}s (min FPS rule)")
         
         if previous_frame is not None and not force_include:
-            if fast_mode:
+            if ultra_fast:
+                # Ultra-fast similarity check - use 80% resolution reduction
+                small_prev = cv2.resize(previous_frame, (0, 0), fx=0.2, fy=0.2)
+                small_curr = cv2.resize(frame, (0, 0), fx=0.2, fy=0.2)
+                similarity = calculate_frame_similarity(small_prev, small_curr)
+            elif fast_mode:
                 # Fast similarity check - use smaller resolution for speed
                 small_prev = cv2.resize(previous_frame, (160, 120))
                 small_curr = cv2.resize(frame, (160, 120))
@@ -256,16 +264,6 @@ def extract_frames_and_convert(mp4_path, output_dir, max_frames=100):
         img = Image.open(frame_path)
         img.save(webp_path, "WEBP", quality=80)
 
-        # Convert to AVIF (requires ffmpeg)
-        avif_path = os.path.join(output_dir, f"frame_{count:03}.avif")
-        result = subprocess.run([
-            "ffmpeg", "-y", "-i", frame_path, "-c:v", "libaom-av1", "-crf", "30", "-b:v", "0", avif_path
-        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        
-        if result.returncode == 0:
-            print(f"Klatka {count} → WebP + AVIF")
-        else:
-            print(f"Klatka {count} → WebP (AVIF failed)")
         
         # Clean up intermediate PNG
         os.remove(frame_path)
@@ -300,14 +298,14 @@ def convert_mp4_to_webm_traditional(mp4_path, output_webm):
         return False
 
 
-def convert_mp4_to_webm_smart(mp4_path, output_webm, similarity_threshold=0.98, min_fps=None, fast_mode=False):
+def convert_mp4_to_webm_smart(mp4_path, output_webm, similarity_threshold=0.98, min_fps=None, fast_mode=False, ultra_fast=False):
     """Smart MP4 to WebM conversion with frame deduplication and performance options."""
-    mode_desc = "🚀 Fast smart" if fast_mode else "🧠 Smart"
+    mode_desc = "🚀 Ultra-fast smart" if ultra_fast else "🚀 Fast smart" if fast_mode else "🧠 Smart"
     print(f"{mode_desc} conversion: {mp4_path} → {output_webm}")
     
     # Analyze frames and find unique ones
     unique_frames, original_fps = analyze_frame_changes(
-        mp4_path, similarity_threshold, min_fps, fast_mode
+        mp4_path, similarity_threshold, min_fps, fast_mode, ultra_fast
     )
     
     if len(unique_frames) == 0:
@@ -330,6 +328,8 @@ def convert_mp4_to_webm_smart(mp4_path, output_webm, similarity_threshold=0.98, 
         
         if fast_mode:
             print(f"🚀 Fast mode: Processing time significantly reduced")
+        if ultra_fast:
+            print(f"🚀 Ultra-fast mode: Maximum speed analysis enabled")
         
         return True
     else:
@@ -374,6 +374,8 @@ Features:
                         help='Minimum FPS to maintain (forces frame inclusion)')
     parser.add_argument('--no-duplicated-frames', action='store_true',
                         help='Skip detailed analysis, use fast duplicate detection')
+    parser.add_argument('--ultra-fast', action='store_true',
+                        help='Use 80% resolution reduction for maximum speed analysis')
     parser.add_argument('--max-frames', type=int, default=100,
                         help='Maximum frames to extract for analysis (default: 100)')
     parser.add_argument('--frames-dir', default='output_frames',
@@ -413,7 +415,7 @@ Features:
         # Convert to WebM using selected method
         if args.smart_conversion:
             success = convert_mp4_to_webm_smart(
-                args.input, args.output, args.threshold, args.min_fps, args.no_duplicated_frames
+                args.input, args.output, args.threshold, args.min_fps, args.no_duplicated_frames, args.ultra_fast
             )
         else:
             success = convert_mp4_to_webm_traditional(args.input, args.output)
