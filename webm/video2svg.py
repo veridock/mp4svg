@@ -174,7 +174,9 @@ def generate_video_svg(video_path: str, output_path: str,
                        muted: bool = True,
                        controls: bool = True,
                        loop: bool = True,
-                       thumbnail_scale: float = 0.3) -> None:
+                       thumbnail_scale: float = 0.3,
+                       play_button_size: int = 40,
+                       user_wants_audio: bool = False) -> None:
     """
     Generate SVG with Base64 data URI video in foreignObject with audio support.
 
@@ -186,6 +188,8 @@ def generate_video_svg(video_path: str, output_path: str,
         controls: Whether to show video controls
         loop: Whether to loop the video
         thumbnail_scale: Scale factor for thumbnail preview
+        play_button_size: Size of play button (radius in pixels)
+        user_wants_audio: Whether user wants audio (for autoplay unmute on click)
     """
     # Validate input file
     if not os.path.exists(video_path):
@@ -211,9 +215,9 @@ def generate_video_svg(video_path: str, output_path: str,
     print(f"   Dimensions: {width}x{height}")
     print(f"   Audio: {'Yes 🔊' if has_audio else 'No 🔇'}")
 
-    # Extract first frame thumbnail (only if not autoplay)
+    # Extract first frame thumbnail (always, unless disabled)
     thumbnail_data_uri = ""
-    if not autoplay:
+    if thumbnail_scale > 0:  # Generate thumbnail unless explicitly disabled
         thumbnail_data_uri = extract_first_frame_thumbnail(video_path, scale=thumbnail_scale)
 
     # Encode to Base64
@@ -234,7 +238,9 @@ def generate_video_svg(video_path: str, output_path: str,
     video_attrs = []
     if autoplay:
         video_attrs.append('autoplay="true"')
-    if muted:
+        # Force muted for autoplay to work in browsers
+        video_attrs.append('muted="true"')
+    elif muted:
         video_attrs.append('muted="true"')
     if controls:
         video_attrs.append('controls="true"')
@@ -243,151 +249,221 @@ def generate_video_svg(video_path: str, output_path: str,
 
     video_attrs_str = ' '.join(video_attrs)
 
-    # Generate thumbnail overlay (only if not autoplay and thumbnail available)
+    # Generate thumbnail overlay (if thumbnail available)
     thumbnail_overlay = ""
-    if thumbnail_data_uri and not autoplay:
+    if thumbnail_data_uri:
         # Calculate play button position (centered)
         play_x = width // 2
         play_y = height // 2
 
+        # Play button sizing
+        button_radius = play_button_size
+        triangle_size = button_radius * 0.3  # Triangle size proportional to button
+
+        # For autoplay, thumbnail acts as poster/preview, for non-autoplay it's interactive
+        initial_opacity = "1.0" if not autoplay else "0.8"
+        pointer_events = "cursor: pointer;" if not autoplay else ""
+        play_button_opacity = "0.9" if not autoplay else "0.7"
+        play_button_cursor = "cursor: pointer;" if not autoplay else ""
+
         thumbnail_overlay = f'''
-  <!-- Preview thumbnail overlay (visible before video plays) -->
+  <!-- Preview thumbnail overlay (poster frame for autoplay, interactive for manual play) -->
   <image href="{thumbnail_data_uri}" 
          x="0" y="0" 
          width="{width}" height="{height}"
          id="preview-thumbnail" 
-         opacity="1.0"
-         style="cursor: pointer;">
-    <title>Click to play video{' with audio' if has_audio else ''}</title>
+         opacity="{initial_opacity}"
+         style="{pointer_events}">
+    <title>{'Video preview' if autoplay else 'Click to play video'}{' with audio' if has_audio else ''}</title>
   </image>
 
-  <!-- Play button overlay -->
-  <g id="play-button" opacity="0.9" style="cursor: pointer;">
-    <circle cx="{play_x}" cy="{play_y}" r="40" fill="rgba(0,0,0,0.7)" stroke="white" stroke-width="3"/>
-    <polygon points="{play_x - 12},{play_y - 18} {play_x - 12},{play_y + 18} {play_x + 16},{play_y}" fill="white"/>
+  <!-- Play button overlay (always visible for preview identification) -->
+  <g id="play-button" opacity="{play_button_opacity}" style="{play_button_cursor}">
+    <circle cx="{play_x}" cy="{play_y}" r="{button_radius}" fill="rgba(0,0,0,0.7)" stroke="white" stroke-width="3"/>
+    <polygon points="{play_x - triangle_size},{play_y - triangle_size * 1.5} {play_x - triangle_size},{play_y + triangle_size * 1.5} {play_x + triangle_size * 1.3},{play_y}" fill="white"/>
   </g>'''
 
         # Add audio indicator if video has audio
         if has_audio:
-            thumbnail_overlay += f'''
+            # Position in bottom-left corner
+            indicator_x = 15
+            indicator_y = height - 15
+
+            # Different text based on autoplay and user audio preference
+            if autoplay and user_wants_audio:
+                audio_text = "🔇 Click for 🔊"
+                indicator_width = 130
+            elif has_audio:
+                audio_text = "🔊 Audio"
+                indicator_width = 100
+            else:
+                audio_text = ""
+                indicator_width = 0
+
+            if audio_text:
+                thumbnail_overlay += f'''
 
   <!-- Audio indicator -->
   <g id="audio-indicator" opacity="0.8">
-    <rect x="10" y="10" width="120" height="30" rx="15" fill="rgba(0,0,0,0.6)" stroke="white" stroke-width="1"/>
-    <text x="70" y="30" text-anchor="middle" fill="white" font-family="Arial" font-size="14">🔊 With Audio</text>
+    <rect x="{indicator_x}" y="{indicator_y - 20}" width="{indicator_width}" height="28" rx="14" fill="rgba(0,0,0,0.7)" stroke="white" stroke-width="1.5"/>
+    <text x="{indicator_x + indicator_width // 2}" y="{indicator_y}" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="13" font-weight="bold">{audio_text}</text>
   </g>'''
 
     # Generate JavaScript for interactive behavior with audio support
-    interactive_js = '''
+    # Pass user's audio preference to JavaScript
+    wants_audio = "true" if user_wants_audio else "false"
+
+    interactive_js = f'''
     <script type="text/javascript">
     <![CDATA[
-    (function() {
+    (function() {{
+        const wantsAudio = {wants_audio};
+
         // Wait for DOM to be ready
-        function onReady() {
+        function onReady() {{
             const video = document.querySelector('video');
             const thumbnail = document.getElementById('preview-thumbnail');
             const playButton = document.getElementById('play-button');
             const audioIndicator = document.getElementById('audio-indicator');
+            let hasStartedPlaying = false;
+            let hasUnmuted = false;
 
             if (!video) return;
 
             // Hide preview when video starts playing
-            function hidePreview() {
-                if (thumbnail) {
+            function hidePreview() {{
+                hasStartedPlaying = true;
+                if (thumbnail) {{
                     thumbnail.style.opacity = '0';
                     thumbnail.style.pointerEvents = 'none';
-                }
-                if (playButton) {
+                }}
+                if (playButton) {{
                     playButton.style.opacity = '0';
                     playButton.style.pointerEvents = 'none';
-                }
-                if (audioIndicator) {
+                }}
+                if (audioIndicator) {{
                     audioIndicator.style.opacity = '0';
-                }
-            }
+                }}
+            }}
 
-            // Show preview when video ends/pauses
-            function showPreview() {
-                if (!video.seeking && !video.currentTime) {
-                    if (thumbnail) {
+            // Show preview when video ends/pauses (only if at start)
+            function showPreview() {{
+                if (!video.seeking && video.currentTime === 0) {{
+                    if (thumbnail) {{
                         thumbnail.style.opacity = '1';
-                        thumbnail.style.pointerEvents = 'auto';
-                    }
-                    if (playButton) {
+                        if (!video.autoplay) {{
+                            thumbnail.style.pointerEvents = 'auto';
+                        }}
+                    }}
+                    if (playButton) {{
                         playButton.style.opacity = '0.9';
                         playButton.style.pointerEvents = 'auto';
-                    }
-                    if (audioIndicator) {
+                    }}
+                    if (audioIndicator) {{
                         audioIndicator.style.opacity = '0.8';
-                    }
-                }
-            }
+                    }}
+                }}
+            }}
 
             // Play video with audio
-            function playVideo() {
-                // Unmute for audio playback
-                video.muted = false;
-                video.play().then(function() {
-                    console.log('Video playing with audio');
-                }).catch(function(e) {
-                    // If autoplay with audio fails, try muted
-                    console.log('Autoplay with audio failed, trying muted:', e);
+            function playVideo() {{
+                // Try to play with audio if wanted
+                if (wantsAudio && !video.autoplay) {{
+                    video.muted = false;
+                }}
+
+                video.play().then(function() {{
+                    console.log('Video playing, muted:', video.muted);
+                }}).catch(function(e) {{
+                    // If play fails, try muted
+                    console.log('Play failed, trying muted:', e.message);
                     video.muted = true;
-                    video.play().catch(function(e2) {
-                        console.log('Video play failed:', e2);
-                    });
-                });
-            }
+                    video.play().catch(function(e2) {{
+                        console.log('Video play failed:', e2.message);
+                    }});
+                }});
+            }}
 
             // Event listeners
             video.addEventListener('play', hidePreview);
             video.addEventListener('playing', hidePreview);
-            video.addEventListener('pause', function() {
-                if (video.currentTime === 0) {
+            video.addEventListener('pause', function() {{
+                if (video.currentTime === 0 && !video.autoplay) {{
                     showPreview();
-                }
-            });
-            video.addEventListener('ended', function() {
+                }}
+            }});
+            video.addEventListener('ended', function() {{
                 video.currentTime = 0;
-                showPreview();
-            });
+                if (!video.loop) {{
+                    showPreview();
+                }}
+            }});
+
+            // For autoplay videos, hide thumbnail when playback actually starts
+            if (video.autoplay) {{
+                video.addEventListener('timeupdate', function() {{
+                    if (!hasStartedPlaying && video.currentTime > 0) {{
+                        hidePreview();
+                    }}
+                }});
+
+                // Try to unmute after autoplay starts (if user wanted audio)
+                if (wantsAudio) {{
+                    video.addEventListener('playing', function() {{
+                        if (!hasUnmuted) {{
+                            hasUnmuted = true;
+                            console.log('Autoplay started, waiting for user interaction to unmute...');
+                        }}
+                    }});
+                }}
+            }}
 
             // Click handlers for play button and thumbnail
-            if (playButton) {
+            if (playButton && !video.autoplay) {{
                 playButton.addEventListener('click', playVideo);
-            }
+            }}
 
-            if (thumbnail) {
+            if (thumbnail && !video.autoplay) {{
                 thumbnail.addEventListener('click', playVideo);
-            }
+            }}
 
             // Volume control hint
-            video.addEventListener('volumechange', function() {
+            video.addEventListener('volumechange', function() {{
                 console.log('Volume:', video.volume, 'Muted:', video.muted);
-            });
+            }});
 
-            // Enable audio on first user interaction (for browsers that block autoplay)
-            function enableAudioOnInteraction() {
-                video.muted = false;
-                document.removeEventListener('click', enableAudioOnInteraction);
-                document.removeEventListener('touchstart', enableAudioOnInteraction);
-            }
+            // Enable audio on first user interaction (for autoplay with unmuted intent)
+            function enableAudioOnInteraction(e) {{
+                if (video.autoplay && wantsAudio && video.muted && hasStartedPlaying) {{
+                    video.muted = false;
+                    console.log('Audio enabled after user interaction');
+                    document.removeEventListener('click', enableAudioOnInteraction);
+                    document.removeEventListener('touchstart', enableAudioOnInteraction);
+                    document.removeEventListener('keydown', enableAudioOnInteraction);
+                }}
+            }}
 
-            if (video.muted && video.autoplay) {
+            // Only set up unmute listeners if autoplay and user wants audio
+            if (video.autoplay && wantsAudio) {{
                 document.addEventListener('click', enableAudioOnInteraction);
                 document.addEventListener('touchstart', enableAudioOnInteraction);
-            }
+                document.addEventListener('keydown', enableAudioOnInteraction);
 
-            console.log('Video SVG ready - Audio:', video.muted ? 'Muted' : 'Enabled');
-        }
+                // Show hint about clicking to unmute
+                console.log('%c🔊 Click anywhere to enable audio', 'font-size: 14px; color: #4CAF50;');
+            }}
+
+            // Log initial state
+            console.log('Video SVG ready - Autoplay:', video.autoplay, 'Muted:', video.muted, 'Wants Audio:', wantsAudio);
+        }}
 
         // Initialize when ready
-        if (document.readyState === 'loading') {
+        if (document.readyState === 'loading') {{
             document.addEventListener('DOMContentLoaded', onReady);
-        } else {
+        }} else {{
             onReady();
-        }
-    })();
+        }}
+    }})();
     ]]>
     </script>'''
 
@@ -401,10 +477,11 @@ def generate_video_svg(video_path: str, output_path: str,
   <title>Video with Audio Support</title>
   <desc>Video embedded as Base64 data URI with audio playback support</desc>
 
-  {thumbnail_overlay if not autoplay else ''}
+  {thumbnail_overlay}
 
   <foreignObject width="{width}" height="{height}">
     <body xmlns="http://www.w3.org/1999/xhtml" style="margin: 0; padding: 0; background: #000;">
+      <!-- Video element with proper autoplay policy compliance -->
       <video {video_attrs_str} 
              width="{width}" 
              height="{height}" 
@@ -450,15 +527,21 @@ def generate_video_svg(video_path: str, output_path: str,
     if controls:
         print(f"   ✅ Video controls enabled - use player controls")
     if has_audio:
-        print(f"   🔊 Audio {'enabled' if not muted else 'muted initially'}")
+        if autoplay:
+            print(f"   🔊 Audio: Autoplay starts muted (browser requirement)")
+            if user_wants_audio:
+                print(f"   🎵 Click anywhere to enable audio after playback starts")
+        else:
+            print(f"   🔊 Audio {'enabled' if not muted else 'muted'}")
+            if not muted:
+                print(f"   🎵 Click play button to start with audio")
+    if thumbnail_data_uri:
         if not autoplay:
-            print(f"   🎵 Click play button to start with audio")
-        elif muted:
-            print(f"   🎵 Click anywhere on video to unmute")
-    if thumbnail_data_uri and not autoplay:
-        print(f"   👆 Click thumbnail or play button to start")
+            print(f"   👆 Click thumbnail or play button to start")
+        else:
+            print(f"   📸 Preview thumbnail included (visible until playback)")
     if autoplay:
-        print(f"   ▶️  Video will autoplay {'(muted)' if muted else ''}")
+        print(f"   ▶️  Video will autoplay (always muted initially)")
     print(f"\n   Ready to open in browser!")
 
 
@@ -472,7 +555,7 @@ Examples:
   # Basic conversion with controls and audio
   python video2svg.py video.mp4 output.svg
 
-  # Autoplay with audio (will be muted initially in most browsers)
+  # Autoplay (always starts muted, click to unmute)
   python video2svg.py video.mp4 output.svg --autoplay --unmuted
 
   # No controls, autoplay muted with loop
@@ -482,10 +565,15 @@ Examples:
   python video2svg.py video.mp4 output.svg --with-controls --unmuted
 
 Audio Notes:
-  • Most browsers block autoplay with audio (security feature)
-  • Use --unmuted to enable audio (requires user interaction)
-  • Click play button or video to start audio playback
+  • Browsers REQUIRE autoplay to start muted (security policy)
+  • Use --unmuted to enable audio after user interaction
+  • Click anywhere after autoplay starts to unmute
   • Controls enabled by default for user convenience
+
+Browser Compatibility:
+  • Chrome/Edge: Autoplay works muted, click to unmute
+  • Firefox: Same as Chrome
+  • Safari: May require additional interaction
         '''
     )
 
@@ -504,15 +592,17 @@ Audio Notes:
 
     # Audio options
     parser.add_argument('--unmuted', action='store_true',
-                        help='Start unmuted (enable audio)')
+                        help='Intent to play with audio (autoplay will start muted, click to unmute)')
     parser.add_argument('--muted', action='store_true',
-                        help='Start muted (default for autoplay)')
+                        help='Start and stay muted (default for autoplay)')
 
     # Thumbnail options
     parser.add_argument('--thumbnail-scale', type=float, default=0.3,
                         help='Thumbnail scale factor (0.1-1.0, default: 0.3)')
     parser.add_argument('--no-thumbnail', action='store_true',
                         help='Skip thumbnail generation')
+    parser.add_argument('--play-button-size', type=int, default=40,
+                        help='Play button radius in pixels (default: 40)')
 
     # Dimension overrides
     parser.add_argument('--width', type=int, help='Override video width')
@@ -535,9 +625,14 @@ Audio Notes:
             get_video_info = custom_info
 
         # Determine muted state
-        muted = not args.unmuted  # Default is muted unless --unmuted is specified
-        if args.autoplay and not args.unmuted:
-            muted = True  # Force muted for autoplay unless explicitly unmuted
+        # For autoplay: ALWAYS start muted (browser requirement)
+        # For manual play: respect user preference
+        if args.autoplay:
+            actual_muted = True  # Always muted for autoplay
+            user_wants_audio = args.unmuted  # But remember user wants audio
+        else:
+            actual_muted = not args.unmuted  # Respect user preference
+            user_wants_audio = args.unmuted
 
         # Determine controls state
         controls = not args.no_controls  # Default is to show controls
@@ -547,10 +642,12 @@ Audio Notes:
             args.input,
             args.output,
             autoplay=args.autoplay,
-            muted=muted,
+            muted=actual_muted,
             controls=controls,
             loop=not args.no_loop,
-            thumbnail_scale=args.thumbnail_scale if not args.no_thumbnail else 0
+            thumbnail_scale=args.thumbnail_scale if not args.no_thumbnail else 0,
+            play_button_size=args.play_button_size,
+            user_wants_audio=user_wants_audio
         )
 
     except FileNotFoundError as e:
