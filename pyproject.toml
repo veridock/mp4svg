@@ -1,0 +1,53 @@
+[tool.poetry]
+name = "mp4svg"
+version = "1.0.0"
+description = "Convert MP4 videos to SVG files with various encoding methods (ASCII85, Polyglot, QR, Vector)"
+authors = ["Tom <info@softreck.dev>"]
+readme = "README.md"
+packages = [{include = "mp4svg", from = "src"}]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Multimedia :: Graphics",
+]
+keywords = ["video", "svg", "ascii85", "multimedia", "conversion", "encoding"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+opencv-python = "^4.8.0"
+numpy = "^1.24.0"
+Pillow = "^10.0.0"
+qrcode = "^7.4.0"
+lxml = "^4.9.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.0"
+black = "^23.0"
+flake8 = "^6.0"
+mypy = "^1.0"
+
+[tool.poetry.scripts]
+mp4svg = "mp4svg.cli:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true

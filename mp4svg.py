@@ -20,7 +20,7 @@ from typing import List, Tuple, Dict, Optional
 from dataclasses import dataclass
 from PIL import Image
 import qrcode
-from xml.etree import ElementTree as ET
+from lxml import etree
 from xml.dom import minidom
 
 
@@ -165,6 +165,9 @@ class ASCII85SVGConverter:
         # Encode using ASCII85
         encoded = self._encode_ascii85(mp4_data)
 
+        # Base64 encode for XML safety
+        encoded_b64 = base64.b64encode(encoded.encode('ascii')).decode('ascii')
+
         # Get video metadata
         cap = cv2.VideoCapture(mp4_path)
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -173,7 +176,7 @@ class ASCII85SVGConverter:
         frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         cap.release()
 
-        # Create SVG with embedded data
+        # Create SVG with embedded data and JavaScript decoder
         svg_content = f'''<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg"
      xmlns:video="http://example.org/video/2024"
@@ -187,20 +190,155 @@ class ASCII85SVGConverter:
                     originalSize="{len(mp4_data)}"
                     fps="{fps}"
                     frames="{frame_count}">
-            <![CDATA[{encoded}]]>
+            <![CDATA[
+{encoded_b64}
+            ]]>
         </video:data>
     </metadata>
 
-    <rect width="100%" height="100%" fill="#1a1a1a"/>
-    <text x="50%" y="45%" text-anchor="middle" fill="#0f0" font-size="24">
-        ASCII85 Video Container
-    </text>
-    <text x="50%" y="50%" text-anchor="middle" fill="#0f0" font-size="14">
-        Size: {len(mp4_data):,} bytes → {len(encoded):,} chars
-    </text>
-    <text x="50%" y="55%" text-anchor="middle" fill="#ff0" font-size="12">
-        Efficiency: {len(encoded) / len(mp4_data) * 100:.1f}% (vs 133% for base64)
-    </text>
+    <defs>
+        <style>
+            .container {{ fill: #1a1a1a; }}
+            .title {{ fill: #0f0; font-size: 24px; text-anchor: middle; }}
+            .info {{ fill: #0f0; font-size: 14px; text-anchor: middle; }}
+            .efficiency {{ fill: #ff0; font-size: 12px; text-anchor: middle; }}
+            .play-btn {{ fill: #00ff00; cursor: pointer; }}
+            .play-btn:hover {{ fill: #00cc00; }}
+        </style>
+    </defs>
+
+    <rect width="100%" height="100%" class="container"/>
+    
+    <text x="50%" y="30%" class="title">ASCII85 Video Container</text>
+    <text x="50%" y="40%" class="info">Size: {len(mp4_data):,} bytes → {len(encoded):,} chars</text>
+    <text x="50%" y="45%" class="efficiency">Efficiency: {len(encoded) / len(mp4_data) * 100:.1f}% (vs 133% for base64)</text>
+    
+    <!-- Play button -->
+    <g id="playButton" class="play-btn">
+        <circle cx="50%" cy="60%" r="30" fill="none" stroke="#00ff00" stroke-width="2"/>
+        <polygon points="{width//2-10},{height*0.6-15} {width//2-10},{height*0.6+15} {width//2+15},{height*0.6}" fill="#00ff00"/>
+        <text x="50%" y="75%" class="info">Click to decode and play video</text>
+    </g>
+
+    <script type="text/javascript">
+    <![CDATA[
+        // ASCII85 decoder implementation
+        function decodeASCII85(encoded) {{
+            // Remove delimiters
+            if (encoded.startsWith('<~')) {{
+                encoded = encoded.substring(2);
+            }}
+            if (encoded.endsWith('~>')) {{
+                encoded = encoded.substring(0, encoded.length - 2);
+            }}
+            
+            // Remove whitespace
+            encoded = encoded.replace(/\\s/g, '');
+            
+            const decoded = [];
+            let i = 0;
+            
+            while (i < encoded.length) {{
+                if (encoded[i] === 'z') {{
+                    // Special case for all zeros
+                    decoded.push(0, 0, 0, 0);
+                    i++;
+                }} else {{
+                    // Process 5 characters
+                    let chunk = encoded.substring(i, i + 5);
+                    if (chunk.length < 5) {{
+                        chunk += 'u'.repeat(5 - chunk.length);
+                    }}
+                    
+                    let value = 0;
+                    for (let j = 0; j < chunk.length; j++) {{
+                        value = value * 85 + (chunk.charCodeAt(j) - 33);
+                    }}
+                    
+                    // Convert to 4 bytes
+                    decoded.push(
+                        (value >>> 24) & 0xFF,
+                        (value >>> 16) & 0xFF,
+                        (value >>> 8) & 0xFF,
+                        value & 0xFF
+                    );
+                    i += 5;
+                }}
+            }}
+            
+            return new Uint8Array(decoded);
+        }}
+        
+        // Function to decode and play video
+        function decodeAndPlayVideo() {{
+            try {{
+                console.log('Decoding ASCII85 video data...');
+                
+                // Get the encoded data from metadata
+                const videoData = document.querySelector('video\\\\:data');
+                const encodedData = videoData.textContent.trim();
+                
+                // Base64 decode
+                const decodedData = atob(encodedData);
+                
+                console.log('Encoded data length:', encodedData.length);
+                
+                // Decode ASCII85
+                const decodedBytes = decodeASCII85(decodedData);
+                console.log('Decoded bytes length:', decodedBytes.length);
+                
+                // Create blob and object URL
+                const videoBlob = new Blob([decodedBytes], {{ type: 'video/mp4' }});
+                const videoUrl = URL.createObjectURL(videoBlob);
+                
+                console.log('Created video blob URL:', videoUrl);
+                
+                // Create and configure video element
+                const video = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+                video.setAttribute('x', '10%');
+                video.setAttribute('y', '10%');
+                video.setAttribute('width', '80%');
+                video.setAttribute('height', '80%');
+                
+                const videoElement = document.createElement('video');
+                videoElement.src = videoUrl;
+                videoElement.controls = true;
+                videoElement.autoplay = true;
+                videoElement.style.width = '100%';
+                videoElement.style.height = '100%';
+                
+                video.appendChild(videoElement);
+                
+                // Replace the content
+                const svg = document.documentElement;
+                // Clear existing content except defs
+                const defs = svg.querySelector('defs');
+                const metadata = svg.querySelector('metadata');
+                svg.innerHTML = '';
+                if (defs) svg.appendChild(defs);
+                if (metadata) svg.appendChild(metadata);
+                svg.appendChild(video);
+                
+                console.log('Video player created and playing');
+                
+            }} catch (error) {{
+                console.error('Error decoding video:', error);
+                alert('Error decoding video: ' + error.message);
+            }}
+        }}
+        
+        // Add click handler to play button
+        document.addEventListener('DOMContentLoaded', function() {{
+            const playButton = document.getElementById('playButton');
+            if (playButton) {{
+                playButton.addEventListener('click', decodeAndPlayVideo);
+            }}
+        }});
+        
+        // Auto-decode when SVG is loaded (optional)
+        // decodeAndPlayVideo();
+    ]]>
+    </script>
 </svg>'''
 
         with open(output_path, 'w') as f:
@@ -246,7 +384,7 @@ class ASCII85SVGConverter:
     def extract(self, svg_path: str, output_mp4: str) -> bool:
         """Extract MP4 from ASCII85 encoded SVG"""
 
-        tree = ET.parse(svg_path)
+        tree = etree.parse(svg_path)
         root = tree.getroot()
 
         # Find video data
@@ -258,7 +396,8 @@ class ASCII85SVGConverter:
             return False
 
         encoded = video_data.text.strip()
-        decoded = self._decode_ascii85(encoded)
+        decoded_b64 = base64.b64decode(encoded).decode('ascii')
+        decoded = self._decode_ascii85(decoded_b64)
 
         with open(output_mp4, 'wb') as f:
             f.write(decoded)
@@ -325,7 +464,7 @@ class SVGVectorFrameConverter:
         frame_indices = np.linspace(0, total_frames - 1, min(max_frames, total_frames), dtype=int)
 
         # Create SVG root
-        svg = ET.Element('svg', {
+        svg = etree.Element('svg', {
             'xmlns': 'http://www.w3.org/2000/svg',
             'width': str(width),
             'height': str(height),
@@ -333,14 +472,14 @@ class SVGVectorFrameConverter:
         })
 
         # Add title and metadata
-        title = ET.SubElement(svg, 'title')
+        title = etree.SubElement(svg, 'title')
         title.text = 'SVG Vector Video'
 
-        desc = ET.SubElement(svg, 'desc')
+        desc = etree.SubElement(svg, 'desc')
         desc.text = f'Vector representation of {os.path.basename(mp4_path)}'
 
         # Add defs for animations
-        defs = ET.SubElement(svg, 'defs')
+        defs = etree.SubElement(svg, 'defs')
 
         # Process frames
         previous_paths = None
@@ -356,21 +495,21 @@ class SVGVectorFrameConverter:
             paths = self._frame_to_svg_paths(frame, edge_threshold)
 
             # Create frame group
-            frame_group = ET.SubElement(svg, 'g', {
+            frame_group = etree.SubElement(svg, 'g', {
                 'id': f'frame-{idx}',
                 'opacity': '1' if idx == 0 else '0'
             })
 
             # Add animation to show/hide frames
             if idx > 0:
-                set_show = ET.SubElement(frame_group, 'set', {
+                set_show = etree.SubElement(frame_group, 'set', {
                     'attributeName': 'opacity',
                     'to': '1',
                     'begin': f'{idx * (1 / fps):.3f}s',
                     'fill': 'freeze'
                 })
 
-                set_hide = ET.SubElement(frame_group, 'set', {
+                set_hide = etree.SubElement(frame_group, 'set', {
                     'attributeName': 'opacity',
                     'to': '0',
                     'begin': f'{(idx + 1) * (1 / fps):.3f}s',
@@ -379,7 +518,7 @@ class SVGVectorFrameConverter:
 
             # Add paths to frame
             for path_data in paths:
-                path = ET.SubElement(frame_group, 'path', {
+                path = etree.SubElement(frame_group, 'path', {
                     'd': path_data,
                     'fill': 'none',
                     'stroke': '#0f0',
@@ -394,7 +533,7 @@ class SVGVectorFrameConverter:
         cap.release()
 
         # Pretty print and save
-        rough_string = ET.tostring(svg, encoding='unicode')
+        rough_string = etree.tostring(svg, encoding='unicode')
         reparsed = minidom.parseString(rough_string)
         pretty_xml = reparsed.toprettyxml(indent="  ")
 
@@ -505,7 +644,7 @@ class QRCodeSVGConverter:
                   for i in range(0, len(mp4_data), self.chunk_size)]
 
         # Create SVG
-        svg = ET.Element('svg', {
+        svg = etree.Element('svg', {
             'xmlns': 'http://www.w3.org/2000/svg',
             'xmlns:xlink': 'http://www.w3.org/1999/xlink',
             'width': str(width),
@@ -522,7 +661,7 @@ class QRCodeSVGConverter:
             'checksum': hashlib.sha256(mp4_data).hexdigest()
         }
 
-        meta_elem = ET.SubElement(svg, 'metadata')
+        meta_elem = etree.SubElement(svg, 'metadata')
         meta_elem.text = json.dumps(metadata, indent=2)
 
         # Create QR codes for each chunk
@@ -557,7 +696,7 @@ class QRCodeSVGConverter:
             y = (idx // grid_cols) * qr_size
 
             # Create frame group
-            frame_group = ET.SubElement(svg, 'g', {
+            frame_group = etree.SubElement(svg, 'g', {
                 'id': f'qr-frame-{idx}',
                 'transform': f'translate({x},{y})',
                 'opacity': '1' if idx == 0 else '0.1'
@@ -568,7 +707,7 @@ class QRCodeSVGConverter:
             qr_img.save(qr_buffer, format='PNG')
             qr_base64 = base64.b64encode(qr_buffer.getvalue()).decode('ascii')
 
-            image = ET.SubElement(frame_group, 'image', {
+            image = etree.SubElement(frame_group, 'image', {
                 'x': '0',
                 'y': '0',
                 'width': str(qr_size),
@@ -579,7 +718,7 @@ class QRCodeSVGConverter:
             print(f"[QR] Chunk {idx + 1}/{len(chunks)}: {len(chunk)} bytes")
 
         # Save SVG
-        tree = ET.ElementTree(svg)
+        tree = etree.ElementTree(svg)
         tree.write(output_path, encoding='utf-8', xml_declaration=True)
 
         print(f"[QR] Created: {output_path}")
@@ -719,16 +858,16 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''
 Methods:
-  polyglot  - Hide MP4 in SVG comments (0% overhead for SVG)
-  ascii85   - ASCII85 encoding (25% overhead vs 33% for base64)
-  vector    - Convert frames to SVG paths (can be 90% smaller with gzip)
+  polyglot  - Hide MP4 in SVG comments (0%% overhead for SVG)
+  ascii85   - ASCII85 encoding (25%% overhead vs 33%% for base64)
+  vector    - Convert frames to SVG paths (can be 90%% smaller with gzip)
   qr        - Store as QR codes (memvid-style)
   hybrid    - Try all methods and compare
 
 Examples:
-  %(prog)s video.mp4 output.svg --method polyglot
-  %(prog)s video.mp4 output.svg --method vector --max-frames 30
-  %(prog)s video.mp4 output_dir/ --method hybrid
+  python mp4svg.py video.mp4 output.svg --method polyglot
+  python mp4svg.py video.mp4 output.svg --method vector --max-frames 30
+  python mp4svg.py video.mp4 output_dir/ --method hybrid
         '''
     )
 
