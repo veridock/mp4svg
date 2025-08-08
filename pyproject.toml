@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mp4svg"
-version = "1.0.3"
+version = "1.0.10"
 description = "Convert MP4 videos to SVG containers using multiple encoding methods"
 authors = ["Tom Sapletta <info@softreck.dev>"]
 readme = "README.md"

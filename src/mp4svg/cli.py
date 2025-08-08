@@ -23,12 +23,14 @@ def main():
 Methods:
   polyglot  - Hide MP4 in SVG comments (0%% overhead for SVG)
   ascii85   - ASCII85 encoding (25%% overhead vs 33%% for base64)
+  base64    - Base64 encoding (33%% overhead, maximum compatibility)
   vector    - Convert frames to SVG paths (can be 90%% smaller with gzip)
   qr        - Store as QR codes (memvid-style)
   hybrid    - Try all methods and compare
 
 Examples:
   mp4svg video.mp4 output.svg --method polyglot
+  mp4svg video.mp4 output.svg --method base64
   mp4svg video.mp4 output.svg --method vector --max-frames 30
   mp4svg video.mp4 output_dir/ --method hybrid
         '''
@@ -37,7 +39,7 @@ Examples:
     parser.add_argument('input', help='Input MP4 file')
     parser.add_argument('output', help='Output SVG file or directory (for hybrid)')
     parser.add_argument('--method', '-m',
-                        choices=['polyglot', 'ascii85', 'vector', 'qr', 'hybrid'],
+                        choices=['polyglot', 'ascii85', 'vector', 'qr', 'hybrid', 'base64'],
                         default='polyglot',
                         help='Conversion method (default: polyglot)')
     parser.add_argument('--pdf', help='Additional PDF file to embed (polyglot only)')
@@ -94,6 +96,11 @@ Examples:
 
     elif args.method == 'hybrid':
         converter_class = get_converter('hybrid')
+        converter = converter_class()
+        converter.convert(args.input, args.output)
+
+    elif args.method == 'base64':
+        converter_class = get_converter('base64')
         converter = converter_class()
         converter.convert(args.input, args.output)
 

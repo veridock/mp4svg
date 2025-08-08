@@ -226,10 +226,16 @@ class ASCII85SVGConverter(BaseConverter):
 
     <script type="text/javascript">
     <![CDATA[
-        // ASCII85 decoder implementation
+        // ASCII85 decoder implementation with length prefix support
         function decodeASCII85(encoded) {{
             if (encoded.startsWith('<~')) encoded = encoded.substring(2);
             if (encoded.endsWith('~>')) encoded = encoded.substring(0, encoded.length - 2);
+            
+            // Extract original length from prefix (format: "length:")
+            const lengthPrefixEnd = encoded.indexOf(':');
+            const originalLength = parseInt(encoded.substring(0, lengthPrefixEnd));
+            encoded = encoded.substring(lengthPrefixEnd + 1);
+            
             encoded = encoded.replace(/\\s/g, '');
             
             const decoded = [];
@@ -255,7 +261,11 @@ class ASCII85SVGConverter(BaseConverter):
                     i += 5;
                 }}
             }}
-            return new Uint8Array(decoded);
+            
+            // Trim to original length to remove padding
+            const result = new Uint8Array(decoded.slice(0, originalLength));
+            console.log('Decoded ASCII85: ' + encoded.length + ' chars -> ' + result.length + ' bytes (expected: ' + originalLength + ')');
+            return result;
         }}
         
         function decodeAndPlayVideo() {{
@@ -280,49 +290,121 @@ class ASCII85SVGConverter(BaseConverter):
                 if (!videoData) throw new Error('Video data element not found in SVG');
                 
                 const encodedData = videoData.textContent.trim();
-                const decodedData = atob(encodedData);
-                const decodedBytes = decodeASCII85(decodedData);
                 
-                const videoBlob = new Blob([decodedBytes], {{ type: 'video/mp4' }});
-                const videoUrl = URL.createObjectURL(videoBlob);
+                // First decode base64 to get ASCII85 string
+                const ascii85Data = atob(encodedData);
                 
-                const video = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
-                video.setAttribute('x', '10%');
-                video.setAttribute('y', '10%');
-                video.setAttribute('width', '80%');
-                video.setAttribute('height', '80%');
+                // Then decode ASCII85 to get binary data
+                const decodedBytes = decodeASCII85(ascii85Data);
                 
-                const videoElement = document.createElement('video');
-                videoElement.src = videoUrl;
-                videoElement.controls = true;
-                videoElement.autoplay = true;
+                const videoUrl = URL.createObjectURL(new Blob([decodedBytes], {{ type: 'video/mp4' }}));
                 
-                // Set styles safely - check if style property exists
-                if (videoElement.style) {{
-                    videoElement.style.width = '100%';
-                    videoElement.style.height = '100%';
-                    videoElement.style.objectFit = 'contain';
+                console.log('Creating video container...');
+                
+                // Create foreignObject element for in-SVG video player
+                const foreignObject = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+                foreignObject.setAttribute('x', '0');
+                foreignObject.setAttribute('y', '0'); 
+                foreignObject.setAttribute('width', '100%');
+                foreignObject.setAttribute('height', '100%');
+                foreignObject.setAttribute('style', 'position: absolute; top: 0; left: 0; z-index: 10000;');
+                
+                // Build HTML video player content programmatically (avoid innerHTML XML parsing issues)
+                const overlay = document.createElement('div');
+                if (overlay.style && overlay.style.cssText !== undefined) {{
+                    overlay.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000;';
                 }} else {{
-                    // Fallback: set attributes directly
-                    videoElement.setAttribute('width', '100%');
-                    videoElement.setAttribute('height', '100%');
+                    overlay.setAttribute('style', 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000;');
                 }}
                 
-                console.log('Created video element:', videoElement);
-                console.log('Video blob URL:', videoUrl);
+                const centered = document.createElement('div');
+                if (centered.style && centered.style.cssText !== undefined) {{
+                    centered.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 800px;';
+                }} else {{
+                    centered.setAttribute('style', 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 800px;');
+                }}
                 
-                video.appendChild(videoElement);
+                const panel = document.createElement('div');
+                if (panel.style && panel.style.cssText !== undefined) {{
+                    panel.style.cssText = 'background: #000; padding: 20px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);';
+                }} else {{
+                    panel.setAttribute('style', 'background: #000; padding: 20px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);');
+                }}
                 
-                const svg = document.documentElement;
-                const defs = svg.querySelector('defs');
-                const metadata = svg.querySelector('metadata');
-                svg.innerHTML = '';
-                if (defs) svg.appendChild(defs);
-                if (metadata) svg.appendChild(metadata);
-                svg.appendChild(video);
+                const title = document.createElement('div');
+                if (title.style && title.style.cssText !== undefined) {{
+                    title.style.cssText = 'color: white; margin-bottom: 10px; font-family: Arial, sans-serif; font-size: 16px;';
+                }} else {{
+                    title.setAttribute('style', 'color: white; margin-bottom: 10px; font-family: Arial, sans-serif; font-size: 16px;');
+                }}
+                title.textContent = ' Mp4svg Video Player';
                 
-                console.log('Video player created and playing');
+                const video = document.createElement('video');
+                video.setAttribute('controls', 'true');
+                video.setAttribute('autoplay', 'true');
+                if (video.style && video.style.cssText !== undefined) {{
+                    video.style.cssText = 'width: 100%; height: auto; border-radius: 5px;';
+                }} else {{
+                    video.setAttribute('style', 'width: 100%; height: auto; border-radius: 5px;');
+                }}
+                video.src = videoUrl;
                 
+                const buttonDiv = document.createElement('div');
+                if (buttonDiv.style && buttonDiv.style.cssText !== undefined) {{
+                    buttonDiv.style.cssText = 'margin-top: 10px; text-align: right;';
+                }} else {{
+                    buttonDiv.setAttribute('style', 'margin-top: 10px; text-align: right;');
+                }}
+                
+                const closeButton = document.createElement('button');
+                if (closeButton.style && closeButton.style.cssText !== undefined) {{
+                    closeButton.style.cssText = 'background: #f44336; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-family: Arial, sans-serif;';
+                }} else {{
+                    closeButton.setAttribute('style', 'background: #f44336; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-family: Arial, sans-serif;');
+                }}
+                closeButton.textContent = ' Close';
+                closeButton.onclick = () => foreignObject.remove();
+                
+                const info = document.createElement('div');
+                if (info.style && info.style.cssText !== undefined) {{
+                    info.style.cssText = 'color: #888; margin-top: 5px; font-family: Arial, sans-serif; font-size: 12px;';
+                }} else {{
+                    info.setAttribute('style', 'color: #888; margin-top: 5px; font-family: Arial, sans-serif; font-size: 12px;');
+                }}
+                info.textContent = 'Video loaded from IndexedDB • Embedded in SVG foreignObject';
+                
+                // Build DOM structure
+                buttonDiv.appendChild(closeButton);
+                panel.appendChild(title);
+                panel.appendChild(video);
+                panel.appendChild(buttonDiv);
+                panel.appendChild(info);
+                centered.appendChild(panel);
+                overlay.appendChild(centered);
+                foreignObject.appendChild(overlay);
+                
+                // Add foreignObject to the SVG
+                const svgElement = document.querySelector('svg');
+                if (svgElement) {{
+                    svgElement.appendChild(foreignObject);
+                    console.log('In-SVG video player created successfully');
+                    
+                    // Remove the play overlay since we now have a proper player
+                    try {{
+                        if (playOverlay && playOverlay.parentNode) {{
+                            playOverlay.remove();
+                        }}
+                    }} catch (e) {{
+                        console.log('Play overlay already removed or not found');
+                    }}
+                }} else {{
+                    console.error('SVG element not found for foreignObject player');
+                    // Fallback to download
+                    const link = document.createElement('a');
+                    link.href = videoUrl;
+                    link.download = 'extracted_video.mp4';
+                    link.click();
+                }}
             }} catch (error) {{
                 console.error('Error decoding video:', error);
                 alert('Error decoding video: ' + error.message);

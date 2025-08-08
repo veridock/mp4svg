@@ -10,6 +10,7 @@ Available Converters:
 - VectorConverter: Frame-to-vector path conversion
 - QRCodeConverter: Chunked QR code embedding
 - HybridConverter: Multi-method comparison tool
+- Base64Converter: Base64 encoding
 """
 
 from .ascii85_converter import ASCII85SVGConverter
@@ -17,6 +18,7 @@ from .polyglot_converter import PolyglotSVGConverter
 from .vector_converter import SVGVectorFrameConverter
 from .qrcode_converter import QRCodeSVGConverter
 from .hybrid_converter import HybridSVGConverter
+from .base64_converter import Base64SVGConverter
 
 # Keep legacy imports for backward compatibility
 from .ascii85_converter import ASCII85SVGConverter as ASCII85Converter
@@ -24,6 +26,7 @@ from .polyglot_converter import PolyglotSVGConverter as PolyglotConverter
 from .vector_converter import SVGVectorFrameConverter as VectorConverter
 from .qrcode_converter import QRCodeSVGConverter as QRCodeConverter
 from .hybrid_converter import HybridSVGConverter as HybridConverter
+from .base64_converter import Base64SVGConverter as Base64Converter
 
 __all__ = [
     # New naming convention
@@ -32,6 +35,7 @@ __all__ = [
     'SVGVectorFrameConverter',
     'QRCodeSVGConverter',
     'HybridSVGConverter',
+    'Base64SVGConverter',
     
     # Legacy naming for backward compatibility
     'ASCII85Converter',
@@ -39,6 +43,7 @@ __all__ = [
     'VectorConverter',
     'QRCodeConverter',
     'HybridConverter',
+    'Base64Converter',
 ]
 
 # Converter registry for dynamic loading
@@ -48,6 +53,7 @@ CONVERTER_REGISTRY = {
     'vector': SVGVectorFrameConverter,
     'qrcode': QRCodeSVGConverter,
     'hybrid': HybridSVGConverter,
+    'base64': Base64SVGConverter,
 }
 
 def get_converter(name: str):

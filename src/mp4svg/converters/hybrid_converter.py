@@ -9,6 +9,7 @@ from .ascii85_converter import ASCII85SVGConverter
 from .polyglot_converter import PolyglotSVGConverter
 from .vector_converter import SVGVectorFrameConverter
 from .qrcode_converter import QRCodeSVGConverter
+from .base64_converter import Base64SVGConverter
 
 
 class HybridSVGConverter(BaseConverter):
@@ -19,6 +20,7 @@ class HybridSVGConverter(BaseConverter):
         self.ascii85 = ASCII85SVGConverter()
         self.vector = SVGVectorFrameConverter()
         self.qr = QRCodeSVGConverter()
+        self.base64 = Base64SVGConverter()
 
     def convert(self, mp4_path: str, output_dir: str) -> str:
         """Convert using all methods and compare results"""
@@ -38,7 +40,8 @@ class HybridSVGConverter(BaseConverter):
             ('polyglot', self.polyglot, f"{output_dir}/{base_name}_polyglot.svg"),
             ('ascii85', self.ascii85, f"{output_dir}/{base_name}_ascii85.svg"),
             ('vector', self.vector, f"{output_dir}/{base_name}_vector.svg"),
-            ('qr', self.qr, f"{output_dir}/{base_name}_qr.svg")
+            ('qr', self.qr, f"{output_dir}/{base_name}_qr.svg"),
+            ('base64', self.base64, f"{output_dir}/{base_name}_base64.svg")
         ]
         
         for method_name, converter, output_path in methods:
@@ -99,6 +102,10 @@ class HybridSVGConverter(BaseConverter):
                 print("[Hybrid] Detected vector format")
                 return self.vector.extract(svg_path, output_mp4)
             
+            elif 'base64' in content:
+                print("[Hybrid] Detected base64 format")
+                return self.base64.extract(svg_path, output_mp4)
+            
             else:
                 print("[Hybrid] Unable to detect SVG format")
                 return False
@@ -138,6 +145,8 @@ class HybridSVGConverter(BaseConverter):
                 print("         └─ Lossy conversion, ~90% smaller with gzip")
             elif method_name == 'qr':
                 print("         └─ Perfect fidelity, requires QR scanner")
+            elif method_name == 'base64':
+                print("         └─ Perfect fidelity, efficient encoding")
         
         # Show failed methods
         failed_results = {k: v for k, v in results.items() if not v.get('success')}
@@ -168,5 +177,9 @@ class HybridSVGConverter(BaseConverter):
             elif best_method == 'qr':
                 print("• QR CODE: Unique visual presentation")
                 print("• Use for interactive/artistic applications")
+                
+            elif best_method == 'base64':
+                print("• BASE64: Best for perfect fidelity with efficient encoding")
+                print("• Use when perfect fidelity is required")
                 
         print("="*70)
