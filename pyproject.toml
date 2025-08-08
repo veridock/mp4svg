@@ -1,42 +1,61 @@
 [tool.poetry]
 name = "mp4svg"
 version = "1.0.0"
-description = "Convert MP4 videos to SVG files with various encoding methods (ASCII85, Polyglot, QR, Vector)"
-authors = ["Tom <info@softreck.dev>"]
+description = "Convert MP4 videos to SVG containers using multiple encoding methods"
+authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
-packages = [{include = "mp4svg", from = "src"}]
+homepage = "https://github.com/yourusername/mp4svg"
+repository = "https://github.com/yourusername/mp4svg"
+documentation = "https://mp4svg.readthedocs.io"
+keywords = ["video", "svg", "conversion", "ascii85", "polyglot"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Topic :: Multimedia :: Video",
-    "Topic :: Multimedia :: Graphics",
+    "Topic :: Multimedia :: Video :: Conversion",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
 ]
-keywords = ["video", "svg", "ascii85", "multimedia", "conversion", "encoding"]
+packages = [{include = "mp4svg", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.8"
 opencv-python = "^4.8.0"
 numpy = "^1.24.0"
 Pillow = "^10.0.0"
-qrcode = "^7.4.0"
+qrcode = {extras = ["pil"], version = "^7.4.0"}
 lxml = "^4.9.0"
+fastapi = "^0.104.0"
+uvicorn = {extras = ["standard"], version = "^0.24.0"}
+python-multipart = "^0.0.6"
+pydantic = "^2.4.0"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^7.0"
-black = "^23.0"
-flake8 = "^6.0"
-mypy = "^1.0"
+pytest = "^7.4.0"
+pytest-cov = "^4.1.0"
+pytest-asyncio = "^0.21.0"
+pytest-mock = "^3.11.0"
+pytest-watch = "^4.2.0"
+black = "^23.7.0"
+isort = "^5.12.0"
+flake8 = "^6.0.0"
+mypy = "^1.5.0"
+bandit = "^1.7.0"
+safety = "^2.3.0"
+pydoc-markdown = "^4.8.0"
+twine = "^4.0.0"
 
 [tool.poetry.scripts]
 mp4svg = "mp4svg.cli:main"
+mp4svg-shell = "mp4svg.shell:main"
+mp4svg-api = "mp4svg.api_server:main"
 
 [build-system]
 requires = ["poetry-core"]
@@ -45,9 +64,75 @@ build-backend = "poetry.core.masonry.api"
 [tool.black]
 line-length = 88
 target-version = ['py38']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["mp4svg"]
 
 [tool.mypy]
 python_version = "3.8"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "cv2.*",
+    "qrcode.*",
+    "PIL.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q --strict-markers"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+[tool.coverage.run]
+source = ["src/mp4svg"]
+omit = ["*/tests/*", "*/test_*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "pass",
+]
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+skips = ["B101", "B601"]
