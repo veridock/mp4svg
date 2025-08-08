@@ -14,6 +14,8 @@ Convert MP4 videos to SVG files using various encoding methods. Supports **6 dif
 
 <iframe src="1.svg" height="400"></iframe>
 
+<img src="1.svg" height="400" />
+
 
 ## ✨ Features
 
