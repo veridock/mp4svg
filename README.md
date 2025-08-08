@@ -9,9 +9,9 @@ Convert MP4 videos to SVG files using various encoding methods. Supports **6 dif
 ![img_1.png](size.png)
 
 ### Video:
-** [➤] Kliknij na poniższy obraz, aby uruchomić video SVG**
+**[➤]** Kliknij na poniższy obraz, aby uruchomić **video SVG**
 
-<iframe src="1.svg" width="100%" height="100%" frameborder="0"></iframe>
+<iframe src="1.svg" width="100%" height="600" frameborder="0"></iframe>
 
 **[➤ Zobacz działające video w SVG - kliknij tutaj](1.svg)**  
 *(Otwórz w nowej karcie przeglądarki - pełna interaktywność z audio)*
