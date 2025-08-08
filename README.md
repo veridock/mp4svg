@@ -2,11 +2,15 @@
 
 Convert MP4 videos to SVG files using various encoding methods. Supports **6 different methods** for embedding video data in SVG containers with robust browser playback, including **in-SVG video players**.
 
-Icons:
+### Icons:
 ![img.png](icons.png)
 
-Size:
+### Size:
 ![img_1.png](size.png)
+
+### Video:
+![1.svg](1.svg)
+
 ## ✨ Features
 
 - **6 Encoding Methods**: Polyglot, ASCII85, Base64, Vector, QR Code, Hybrid
