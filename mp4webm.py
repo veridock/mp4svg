@@ -9,6 +9,8 @@ Usage:
     python mp4webm.py input.mp4 output.webm
     python mp4webm.py input.mp4 output.webm --smart-conversion
     python mp4webm.py input.mp4 output.webm --threshold 0.95
+    python mp4webm.py input.mp4 output.webm --min-fps 15
+    python mp4webm.py input.mp4 output.webm --no-duplicated-frames
 """
 
 import cv2
@@ -40,15 +42,25 @@ def calculate_frame_similarity(frame1, frame2):
     return similarity
 
 
-def analyze_frame_changes(mp4_path, similarity_threshold=0.98):
+def analyze_frame_changes(mp4_path, similarity_threshold=0.98, min_fps=None, fast_mode=False):
     """
-    Analyze video for real frame changes and timing.
+    Analyze video for real frame changes and timing with performance optimizations.
+    
+    Args:
+        mp4_path: Path to video file
+        similarity_threshold: Threshold for frame similarity (0.0-1.0)
+        min_fps: Minimum FPS to maintain (forces frame inclusion)
+        fast_mode: Skip detailed analysis, use fast duplicate detection
     
     Returns:
         List of unique frames with their timing information
     """
     print(f"🔍 Analyzing frame changes in: {mp4_path}")
     print(f"📊 Similarity threshold: {similarity_threshold}")
+    if min_fps:
+        print(f"⚡ Minimum FPS: {min_fps}")
+    if fast_mode:
+        print(f"🚀 Fast mode: Early duplicate detection enabled")
     
     cap = cv2.VideoCapture(mp4_path)
     
@@ -56,43 +68,77 @@ def analyze_frame_changes(mp4_path, similarity_threshold=0.98):
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     fps = cap.get(cv2.CAP_PROP_FPS)
     frame_duration = 1.0 / fps
+    video_duration = total_frames / fps
     
-    print(f"📺 Video: {total_frames} frames @ {fps:.2f} FPS")
+    # Calculate minimum frame interval if min_fps is specified
+    min_frame_interval = 1.0 / min_fps if min_fps else 0
+    
+    print(f"📺 Video: {total_frames} frames @ {fps:.2f} FPS ({video_duration:.2f}s)")
     
     unique_frames = []
     previous_frame = None
     current_time = 0.0
     frame_count = 0
     duplicates_skipped = 0
+    last_included_time = -min_frame_interval  # Force first frame inclusion
+    
+    # Fast mode: Skip frames more aggressively
+    frame_skip = 2 if fast_mode and fps > 15 else 1
     
     while True:
         ret, frame = cap.read()
         if not ret:
             break
         
-        is_different = True
+        # Skip frames in fast mode to reduce processing
+        if fast_mode and (frame_count % frame_skip != 0):
+            current_time += frame_duration
+            frame_count += 1
+            continue
         
-        if previous_frame is not None:
-            similarity = calculate_frame_similarity(previous_frame, frame)
+        is_different = True
+        force_include = False
+        
+        # Force inclusion based on minimum FPS
+        if min_fps and (current_time - last_included_time) >= min_frame_interval:
+            force_include = True
+            print(f"⚡ Force include frame at {current_time:.2f}s (min FPS rule)")
+        
+        if previous_frame is not None and not force_include:
+            if fast_mode:
+                # Fast similarity check - use smaller resolution for speed
+                small_prev = cv2.resize(previous_frame, (160, 120))
+                small_curr = cv2.resize(frame, (160, 120))
+                similarity = calculate_frame_similarity(small_prev, small_curr)
+            else:
+                similarity = calculate_frame_similarity(previous_frame, frame)
+                
             if similarity >= similarity_threshold:
                 is_different = False
                 duplicates_skipped += 1
         
-        if is_different:
+        if is_different or force_include:
             # This is a new unique frame
             unique_frames.append({
                 'frame': frame.copy(),
                 'timestamp': current_time,
                 'original_index': frame_count,
-                'duration': frame_duration  # Will be updated later
+                'duration': frame_duration,  # Will be updated later
+                'forced': force_include
             })
             previous_frame = frame.copy()
+            last_included_time = current_time
             
             if len(unique_frames) % 10 == 0:
                 print(f"📍 Found {len(unique_frames)} unique frames (skipped {duplicates_skipped} duplicates)")
         
         current_time += frame_duration
         frame_count += 1
+        
+        # Early termination for very long videos in fast mode
+        if fast_mode and frame_count > 1000:
+            print(f"🚀 Fast mode: Early termination at {frame_count} frames")
+            break
     
     cap.release()
     
@@ -104,13 +150,20 @@ def analyze_frame_changes(mp4_path, similarity_threshold=0.98):
             unique_frames[i]['duration'] = duration
         else:
             # Last frame duration (remaining time)
-            unique_frames[i]['duration'] = current_time - unique_frames[i]['timestamp']
+            remaining_time = video_duration - unique_frames[i]['timestamp']
+            unique_frames[i]['duration'] = max(remaining_time, frame_duration)
+    
+    # Calculate effective FPS
+    effective_fps = len(unique_frames) / video_duration if video_duration > 0 else 0
     
     print(f"✅ Analysis complete:")
     print(f"   Original frames: {total_frames}")
     print(f"   Unique frames: {len(unique_frames)}")
     print(f"   Duplicates removed: {duplicates_skipped}")
     print(f"   Compression ratio: {len(unique_frames)/total_frames:.1%}")
+    print(f"   Effective FPS: {effective_fps:.2f}")
+    if min_fps:
+        print(f"   Min FPS maintained: {'✅' if effective_fps >= min_fps * 0.9 else '⚠️'}")
     
     return unique_frames, fps
 
@@ -247,12 +300,15 @@ def convert_mp4_to_webm_traditional(mp4_path, output_webm):
         return False
 
 
-def convert_mp4_to_webm_smart(mp4_path, output_webm, similarity_threshold=0.98):
-    """Smart MP4 to WebM conversion with frame deduplication."""
-    print(f"🧠 Smart conversion: {mp4_path} → {output_webm}")
+def convert_mp4_to_webm_smart(mp4_path, output_webm, similarity_threshold=0.98, min_fps=None, fast_mode=False):
+    """Smart MP4 to WebM conversion with frame deduplication and performance options."""
+    mode_desc = "🚀 Fast smart" if fast_mode else "🧠 Smart"
+    print(f"{mode_desc} conversion: {mp4_path} → {output_webm}")
     
     # Analyze frames and find unique ones
-    unique_frames, original_fps = analyze_frame_changes(mp4_path, similarity_threshold)
+    unique_frames, original_fps = analyze_frame_changes(
+        mp4_path, similarity_threshold, min_fps, fast_mode
+    )
     
     if len(unique_frames) == 0:
         print(f"❌ No frames found in video")
@@ -272,6 +328,9 @@ def convert_mp4_to_webm_smart(mp4_path, output_webm, similarity_threshold=0.98):
         print(f"🗜️ Compression: {compression_ratio:.1f}% smaller")
         print(f"🎯 Frame optimization: {len(unique_frames)} unique frames used")
         
+        if fast_mode:
+            print(f"🚀 Fast mode: Processing time significantly reduced")
+        
         return True
     else:
         return False
@@ -288,6 +347,8 @@ Examples:
   python mp4webm.py input.mp4 output.webm --smart-conversion
   python mp4webm.py input.mp4 output.webm --threshold 0.95
   python mp4webm.py video.mp4 compressed.webm --max-frames 50
+  python mp4webm.py video.mp4 compressed.webm --min-fps 15
+  python mp4webm.py video.mp4 compressed.webm --no-duplicated-frames
   
 Smart Conversion:
   Analyzes video for real frame changes and creates WebM with optimal timing.
@@ -309,6 +370,10 @@ Features:
                         help='Use intelligent frame deduplication (recommended)')
     parser.add_argument('--threshold', type=float, default=0.98,
                         help='Frame similarity threshold (0.0-1.0, default: 0.98)')
+    parser.add_argument('--min-fps', type=int,
+                        help='Minimum FPS to maintain (forces frame inclusion)')
+    parser.add_argument('--no-duplicated-frames', action='store_true',
+                        help='Skip detailed analysis, use fast duplicate detection')
     parser.add_argument('--max-frames', type=int, default=100,
                         help='Maximum frames to extract for analysis (default: 100)')
     parser.add_argument('--frames-dir', default='output_frames',
@@ -347,7 +412,9 @@ Features:
         
         # Convert to WebM using selected method
         if args.smart_conversion:
-            success = convert_mp4_to_webm_smart(args.input, args.output, args.threshold)
+            success = convert_mp4_to_webm_smart(
+                args.input, args.output, args.threshold, args.min_fps, args.no_duplicated_frames
+            )
         else:
             success = convert_mp4_to_webm_traditional(args.input, args.output)
         

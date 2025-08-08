@@ -4,6 +4,7 @@ venv
 *.mp4
 *.svg
 *.svg.gz
+*.webm
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
