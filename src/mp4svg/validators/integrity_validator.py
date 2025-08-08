@@ -7,8 +7,8 @@ import hashlib
 import json
 import base64
 from typing import Dict, Optional, Tuple
-from ..ascii85 import ASCII85SVGConverter
-from ..polyglot import PolyglotSVGConverter
+from ..converters.ascii85_converter import ASCII85SVGConverter
+from ..converters.polyglot_converter import PolyglotSVGConverter
 from ..base import ValidationError
 
 

@@ -251,7 +251,7 @@ class TestIntegrityValidator:
         format_type = self.validator._detect_format(svg_file)
         assert format_type is None
 
-    @patch('mp4svg.ascii85.ASCII85SVGConverter.extract')
+    @patch('mp4svg.converters.ascii85_converter.ASCII85SVGConverter.extract')
     def test_validate_integrity_ascii85_success(self, mock_extract):
         """Test successful ASCII85 integrity validation"""
         # Mock successful extraction

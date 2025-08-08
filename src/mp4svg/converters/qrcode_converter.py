@@ -45,18 +45,21 @@ class QRCodeSVGConverter(BaseConverter):
             height = metadata['height']
 
             # Calculate QR grid dimensions
-            qr_size = min(width, height) // 2
-            grid_cols = max(1, width // qr_size)
+            qr_size = max(50, min(width, height) // 2)  # Ensure minimum size of 50px
+            grid_cols = max(1, width // qr_size) if qr_size > 0 else 1
             grid_rows = max(1, (len(chunks) + grid_cols - 1) // grid_cols)
 
             # Create SVG
             svg = etree.Element('svg', {
                 'xmlns': 'http://www.w3.org/2000/svg',
-                'xmlns:xlink': 'http://www.w3.org/1999/xlink',
                 'width': str(width),
                 'height': str(height),
                 'viewBox': f'0 0 {width} {height}'
             })
+            
+            # Add xlink namespace
+            svg.set('{http://www.w3.org/1999/xlink}href', '')
+            del svg.attrib['{http://www.w3.org/1999/xlink}href']  # Remove after setting namespace
 
             # Add metadata if requested
             if include_metadata:
@@ -214,7 +217,8 @@ def extract_qr_codes_from_svg():
     root = tree.getroot()
     
     # Find all QR code images
-    images = root.findall('.//{{{root.nsmap[None]}}}image')
+    ns = {{'svg': 'http://www.w3.org/2000/svg'}}
+    images = root.findall('.//svg:image', ns)
     
     chunks = {{}}
     
@@ -222,7 +226,7 @@ def extract_qr_codes_from_svg():
         href = img.get('href', '')
         if not href.startswith('data:image/png;base64,'):
             continue
-            
+        
         # Decode base64 image
         image_b64 = href.split(',', 1)[1]
         image_data = base64.b64decode(image_b64)

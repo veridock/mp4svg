@@ -89,6 +89,7 @@ class ASCII85SVGConverter(BaseConverter):
         """Encode binary data using ASCII85"""
         
         encoded = []
+        original_length = len(data)
 
         # Process in 4-byte chunks
         for i in range(0, len(data), 4):
@@ -112,7 +113,8 @@ class ASCII85SVGConverter(BaseConverter):
                     value //= 85
                 encoded.append(''.join(reversed(chars)))
 
-        result = '<~' + ''.join(encoded) + '~>'
+        # Simple approach: store original length as decimal prefix separated by ':'
+        result = f'<~{original_length}:' + ''.join(encoded) + '~>'
         return result
 
     def _decode_ascii85(self, encoded: str) -> bytes:
@@ -124,9 +126,14 @@ class ASCII85SVGConverter(BaseConverter):
         if encoded.endswith('~>'):
             encoded = encoded[:-2]
 
+        # Extract original length from prefix
+        length_prefix_end = encoded.find(':')
+        original_length = int(encoded[:length_prefix_end])
+        encoded = encoded[length_prefix_end + 1:]
+
         decoded = []
         i = 0
-
+        
         while i < len(encoded):
             if encoded[i] == 'z':
                 decoded.extend([0, 0, 0, 0])
@@ -134,16 +141,28 @@ class ASCII85SVGConverter(BaseConverter):
             else:
                 # Process 5 characters
                 chunk = encoded[i:i + 5]
+                padding_chars = 0
                 if len(chunk) < 5:
-                    chunk += 'u' * (5 - len(chunk))
+                    padding_chars = 5 - len(chunk)
+                    chunk += 'u' * padding_chars
 
                 value = 0
                 for char in chunk:
                     value = value * 85 + (ord(char) - 33)
 
-                decoded.extend(struct.pack('>I', value))
+                # Convert back to 4 bytes
+                chunk_bytes = struct.pack('>I', value)
+                
+                # If this is the last chunk and we had padding, remove corresponding bytes
+                if i + 5 >= len(encoded) and padding_chars > 0:
+                    chunk_bytes = chunk_bytes[:4-padding_chars]
+                
+                decoded.extend(chunk_bytes)
                 i += 5
 
+        # Trim decoded data to original length
+        decoded = decoded[:original_length]
+        
         return bytes(decoded)
 
     def _generate_svg(self, mp4_data: bytes, encoded_b64: str, thumbnail_b64: str, 
