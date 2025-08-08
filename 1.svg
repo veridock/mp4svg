@@ -8,19 +8,20 @@
   <desc>Video embedded as Base64 data URI with audio playback support</desc>
 
   
-  <!-- Preview thumbnail overlay (poster frame for autoplay, interactive for manual play) -->
+  <!-- Preview thumbnail overlay (poster frame always visible for system preview) -->
   <image href="data:image/jpeg;base64,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" 
          x="0" y="0" 
          width="240" height="426"
          id="preview-thumbnail" 
-         opacity="0.8"
-         style="">
+         opacity="1.0"
+         style=""
+         preserveAspectRatio="xMidYMid meet">
     <title>Video preview with audio</title>
   </image>
 
-  <!-- Play button overlay (always visible for preview identification) -->
-  <g id="play-button" opacity="0.7" style="">
-    <circle cx="120" cy="213" r="40" fill="rgba(0,0,0,0.7)" stroke="white" stroke-width="3"/>
+  <!-- Play button overlay (always visible for clear video identification) -->
+  <g id="play-button" opacity="1.0" style="">
+    <circle cx="120" cy="213" r="40" fill="rgba(0,0,0,0.8)" stroke="white" stroke-width="3"/>
     <polygon points="108.0,195.0 108.0,231.0 135.6,213" fill="white"/>
   </g>
 
@@ -64,36 +65,77 @@
             // Hide preview when video starts playing
             function hidePreview() {
                 hasStartedPlaying = true;
-                if (thumbnail) {
-                    thumbnail.style.opacity = '0';
-                    thumbnail.style.pointerEvents = 'none';
-                }
-                if (playButton) {
-                    playButton.style.opacity = '0';
-                    playButton.style.pointerEvents = 'none';
-                }
-                if (audioIndicator) {
-                    audioIndicator.style.opacity = '0';
+                // Only hide thumbnail if video is actually playing (not just autoplay attempting)
+                if (video.currentTime > 0.1) {
+                    if (thumbnail) {
+                        thumbnail.style.opacity = '0';
+                        thumbnail.style.pointerEvents = 'none';
+                    }
+                    if (playButton) {
+                        playButton.style.opacity = '0';
+                        playButton.style.pointerEvents = 'none';
+                    }
+                    if (audioIndicator) {
+                        audioIndicator.style.opacity = '0';
+                    }
                 }
             }
 
-            // Show preview when video ends/pauses (only if at start)
+            // Show preview when video ends/pauses
             function showPreview() {
-                if (!video.seeking && video.currentTime === 0) {
-                    if (thumbnail) {
-                        thumbnail.style.opacity = '1';
-                        if (!video.autoplay) {
-                            thumbnail.style.pointerEvents = 'auto';
-                        }
-                    }
-                    if (playButton) {
-                        playButton.style.opacity = '0.9';
-                        playButton.style.pointerEvents = 'auto';
-                    }
-                    if (audioIndicator) {
-                        audioIndicator.style.opacity = '0.8';
+                if (thumbnail) {
+                    thumbnail.style.opacity = '1';
+                    if (!video.autoplay) {
+                        thumbnail.style.pointerEvents = 'auto';
                     }
                 }
+                if (playButton) {
+                    playButton.style.opacity = '1';
+                    playButton.style.pointerEvents = 'auto';
+                }
+                if (audioIndicator) {
+                    audioIndicator.style.opacity = '0.8';
+                }
+            }
+
+            // Event listeners for hiding preview only when video actually plays
+            video.addEventListener('timeupdate', function() {
+                // Only hide thumbnail when video has progressed past initial frame
+                if (!hasStartedPlaying && video.currentTime > 0.1) {
+                    hidePreview();
+                }
+            });
+            
+            video.addEventListener('playing', function() {
+                // Ensure thumbnail hides when video is actively playing
+                if (video.currentTime > 0.1) {
+                    hidePreview();
+                }
+            });
+            
+            video.addEventListener('pause', function() {
+                if (video.currentTime === 0) {
+                    showPreview();
+                }
+            });
+            
+            video.addEventListener('ended', function() {
+                video.currentTime = 0;
+                showPreview();
+            });
+
+            // For iframe compatibility - ensure thumbnail is always visible initially
+            setTimeout(function() {
+                if (!hasStartedPlaying && video.currentTime === 0) {
+                    showPreview();
+                }
+            }, 100);
+
+            // Autoplay handling - try to start but keep thumbnail until actual playback
+            if (video.autoplay) {
+                video.play().catch(function(e) {
+                    console.log('Autoplay blocked, thumbnail will remain visible');
+                });
             }
 
             // Play video with audio
@@ -113,40 +155,6 @@
                         console.log('Video play failed:', e2.message);
                     });
                 });
-            }
-
-            // Event listeners
-            video.addEventListener('play', hidePreview);
-            video.addEventListener('playing', hidePreview);
-            video.addEventListener('pause', function() {
-                if (video.currentTime === 0 && !video.autoplay) {
-                    showPreview();
-                }
-            });
-            video.addEventListener('ended', function() {
-                video.currentTime = 0;
-                if (!video.loop) {
-                    showPreview();
-                }
-            });
-
-            // For autoplay videos, hide thumbnail when playback actually starts
-            if (video.autoplay) {
-                video.addEventListener('timeupdate', function() {
-                    if (!hasStartedPlaying && video.currentTime > 0) {
-                        hidePreview();
-                    }
-                });
-
-                // Try to unmute after autoplay starts (if user wanted audio)
-                if (wantsAudio) {
-                    video.addEventListener('playing', function() {
-                        if (!hasUnmuted) {
-                            hasUnmuted = true;
-                            console.log('Autoplay started, waiting for user interaction to unmute...');
-                        }
-                    });
-                }
             }
 
             // Click handlers for play button and thumbnail

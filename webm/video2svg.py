@@ -261,25 +261,27 @@ def generate_video_svg(video_path: str, output_path: str,
         triangle_size = button_radius * 0.3  # Triangle size proportional to button
 
         # For autoplay, thumbnail acts as poster/preview, for non-autoplay it's interactive
-        initial_opacity = "1.0" if not autoplay else "0.8"
+        # Always make thumbnail clearly visible for system preview and iframe embedding
+        initial_opacity = "1.0"  # Always full opacity for system preview
         pointer_events = "cursor: pointer;" if not autoplay else ""
-        play_button_opacity = "0.9" if not autoplay else "0.7"
+        play_button_opacity = "1.0"  # Always visible for clear video indication
         play_button_cursor = "cursor: pointer;" if not autoplay else ""
 
         thumbnail_overlay = f'''
-  <!-- Preview thumbnail overlay (poster frame for autoplay, interactive for manual play) -->
+  <!-- Preview thumbnail overlay (poster frame always visible for system preview) -->
   <image href="{thumbnail_data_uri}" 
          x="0" y="0" 
          width="{width}" height="{height}"
          id="preview-thumbnail" 
          opacity="{initial_opacity}"
-         style="{pointer_events}">
+         style="{pointer_events}"
+         preserveAspectRatio="xMidYMid meet">
     <title>{'Video preview' if autoplay else 'Click to play video'}{' with audio' if has_audio else ''}</title>
   </image>
 
-  <!-- Play button overlay (always visible for preview identification) -->
+  <!-- Play button overlay (always visible for clear video identification) -->
   <g id="play-button" opacity="{play_button_opacity}" style="{play_button_cursor}">
-    <circle cx="{play_x}" cy="{play_y}" r="{button_radius}" fill="rgba(0,0,0,0.7)" stroke="white" stroke-width="3"/>
+    <circle cx="{play_x}" cy="{play_y}" r="{button_radius}" fill="rgba(0,0,0,0.8)" stroke="white" stroke-width="3"/>
     <polygon points="{play_x - triangle_size},{play_y - triangle_size * 1.5} {play_x - triangle_size},{play_y + triangle_size * 1.5} {play_x + triangle_size * 1.3},{play_y}" fill="white"/>
   </g>'''
 
@@ -333,36 +335,77 @@ def generate_video_svg(video_path: str, output_path: str,
             // Hide preview when video starts playing
             function hidePreview() {{
                 hasStartedPlaying = true;
-                if (thumbnail) {{
-                    thumbnail.style.opacity = '0';
-                    thumbnail.style.pointerEvents = 'none';
-                }}
-                if (playButton) {{
-                    playButton.style.opacity = '0';
-                    playButton.style.pointerEvents = 'none';
-                }}
-                if (audioIndicator) {{
-                    audioIndicator.style.opacity = '0';
+                // Only hide thumbnail if video is actually playing (not just autoplay attempting)
+                if (video.currentTime > 0.1) {{
+                    if (thumbnail) {{
+                        thumbnail.style.opacity = '0';
+                        thumbnail.style.pointerEvents = 'none';
+                    }}
+                    if (playButton) {{
+                        playButton.style.opacity = '0';
+                        playButton.style.pointerEvents = 'none';
+                    }}
+                    if (audioIndicator) {{
+                        audioIndicator.style.opacity = '0';
+                    }}
                 }}
             }}
 
-            // Show preview when video ends/pauses (only if at start)
+            // Show preview when video ends/pauses
             function showPreview() {{
-                if (!video.seeking && video.currentTime === 0) {{
-                    if (thumbnail) {{
-                        thumbnail.style.opacity = '1';
-                        if (!video.autoplay) {{
-                            thumbnail.style.pointerEvents = 'auto';
-                        }}
-                    }}
-                    if (playButton) {{
-                        playButton.style.opacity = '0.9';
-                        playButton.style.pointerEvents = 'auto';
-                    }}
-                    if (audioIndicator) {{
-                        audioIndicator.style.opacity = '0.8';
+                if (thumbnail) {{
+                    thumbnail.style.opacity = '1';
+                    if (!video.autoplay) {{
+                        thumbnail.style.pointerEvents = 'auto';
                     }}
                 }}
+                if (playButton) {{
+                    playButton.style.opacity = '1';
+                    playButton.style.pointerEvents = 'auto';
+                }}
+                if (audioIndicator) {{
+                    audioIndicator.style.opacity = '0.8';
+                }}
+            }}
+
+            // Event listeners for hiding preview only when video actually plays
+            video.addEventListener('timeupdate', function() {{
+                // Only hide thumbnail when video has progressed past initial frame
+                if (!hasStartedPlaying && video.currentTime > 0.1) {{
+                    hidePreview();
+                }}
+            }});
+            
+            video.addEventListener('playing', function() {{
+                // Ensure thumbnail hides when video is actively playing
+                if (video.currentTime > 0.1) {{
+                    hidePreview();
+                }}
+            }});
+            
+            video.addEventListener('pause', function() {{
+                if (video.currentTime === 0) {{
+                    showPreview();
+                }}
+            }});
+            
+            video.addEventListener('ended', function() {{
+                video.currentTime = 0;
+                showPreview();
+            }});
+
+            // For iframe compatibility - ensure thumbnail is always visible initially
+            setTimeout(function() {{
+                if (!hasStartedPlaying && video.currentTime === 0) {{
+                    showPreview();
+                }}
+            }}, 100);
+
+            // Autoplay handling - try to start but keep thumbnail until actual playback
+            if (video.autoplay) {{
+                video.play().catch(function(e) {{
+                    console.log('Autoplay blocked, thumbnail will remain visible');
+                }});
             }}
 
             // Play video with audio
@@ -382,40 +425,6 @@ def generate_video_svg(video_path: str, output_path: str,
                         console.log('Video play failed:', e2.message);
                     }});
                 }});
-            }}
-
-            // Event listeners
-            video.addEventListener('play', hidePreview);
-            video.addEventListener('playing', hidePreview);
-            video.addEventListener('pause', function() {{
-                if (video.currentTime === 0 && !video.autoplay) {{
-                    showPreview();
-                }}
-            }});
-            video.addEventListener('ended', function() {{
-                video.currentTime = 0;
-                if (!video.loop) {{
-                    showPreview();
-                }}
-            }});
-
-            // For autoplay videos, hide thumbnail when playback actually starts
-            if (video.autoplay) {{
-                video.addEventListener('timeupdate', function() {{
-                    if (!hasStartedPlaying && video.currentTime > 0) {{
-                        hidePreview();
-                    }}
-                }});
-
-                // Try to unmute after autoplay starts (if user wanted audio)
-                if (wantsAudio) {{
-                    video.addEventListener('playing', function() {{
-                        if (!hasUnmuted) {{
-                            hasUnmuted = true;
-                            console.log('Autoplay started, waiting for user interaction to unmute...');
-                        }}
-                    }});
-                }}
             }}
 
             // Click handlers for play button and thumbnail

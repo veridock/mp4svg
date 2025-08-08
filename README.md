@@ -10,12 +10,13 @@ Convert MP4 videos to SVG files using various encoding methods. Supports **6 dif
 
 ### Video:
 
-![1.svg](1.svg)
-
 <iframe src="1.svg" height="400"></iframe>
+**[➤ Zobacz działające video w SVG - kliknij tutaj](1.svg)**  
+*(Otwórz w nowej karcie przeglądarki - pełna interaktywność z audio)*
 
-<img src="1.svg" height="400" />
-
+> **💡 Dlaczego nie działa inline?**  
+> GitHub i inne platformy markdown blokują JavaScript w SVG z bezpieczeństwa.  
+> Aby zobaczyć działające video z kontrolkami - otwórz link powyżej! 🎬
 
 ## ✨ Features
 
@@ -340,7 +341,9 @@ pip install -e ".[dev]"
 pytest tests/
 
 # Run specific test file
-pytest tests/test_converters.py -v
+pytest tests/test_converters.py  # Converter tests
+pytest tests/test_validators.py  # Validation tests
+pytest tests/test_api.py         # API tests
 
 # Run with coverage
 pytest tests/ --cov=mp4svg --cov-report=html
