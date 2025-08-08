@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
 """
-Command-line interface for MP4SVG converter
+Command-line interface for mp4svg
 """
 
-import os
-import sys
 import argparse
+import sys
+import os
 
-from .converters import (
-    PolyglotSVGConverter,
-    ASCII85SVGConverter,
-    SVGVectorFrameConverter,
-    QRCodeSVGConverter,
-    HybridSVGConverter
+from . import (
+    get_converter, list_converters, CONVERTER_REGISTRY,
+    EncodingError, DecodingError
 )
 
 
@@ -63,39 +60,47 @@ Examples:
     # Handle extraction mode
     if args.extract:
         if args.method == 'polyglot':
-            converter = PolyglotSVGConverter()
+            converter_class = get_converter('polyglot')
+            converter = converter_class()
             converter.extract(args.input, args.output)
         elif args.method == 'ascii85':
-            converter = ASCII85SVGConverter()
+            converter_class = get_converter('ascii85')
+            converter = converter_class()
             converter.extract(args.input, args.output)
         else:
             print(f"Extraction not implemented for method: {args.method}")
-            sys.exit(1)
         return
 
     # Handle conversion
     if args.method == 'polyglot':
-        converter = PolyglotSVGConverter()
+        converter_class = get_converter('polyglot')
+        converter = converter_class()
         converter.convert(args.input, args.output, args.pdf)
 
     elif args.method == 'ascii85':
-        converter = ASCII85SVGConverter()
+        converter_class = get_converter('ascii85')
+        converter = converter_class()
         converter.convert(args.input, args.output)
 
     elif args.method == 'vector':
-        converter = SVGVectorFrameConverter()
+        converter_class = get_converter('vector')
+        converter = converter_class()
         converter.convert(args.input, args.output, args.max_frames, args.edge_threshold)
 
     elif args.method == 'qr':
-        converter = QRCodeSVGConverter(chunk_size=args.chunk_size)
+        converter_class = get_converter('qrcode')
+        converter = converter_class(chunk_size=args.chunk_size)
         converter.convert(args.input, args.output)
 
     elif args.method == 'hybrid':
-        converter = HybridSVGConverter()
+        converter_class = get_converter('hybrid')
+        converter = converter_class()
         converter.convert(args.input, args.output)
 
     else:
+        available_methods = list_converters()
         print(f"Unknown method: {args.method}")
+        print(f"Available methods: {', '.join(available_methods)}")
         sys.exit(1)
 
 

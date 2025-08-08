@@ -7,7 +7,7 @@ import os
 import struct
 import base64
 from lxml import etree
-from .base import BaseConverter, EncodingError, DecodingError
+from ..base import BaseConverter, EncodingError, DecodingError
 
 
 class ASCII85SVGConverter(BaseConverter):

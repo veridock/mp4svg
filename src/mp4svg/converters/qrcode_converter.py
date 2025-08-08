@@ -12,7 +12,7 @@ from typing import List
 import qrcode
 from PIL import Image
 from lxml import etree
-from .base import BaseConverter, EncodingError, DecodingError
+from ..base import BaseConverter, EncodingError, DecodingError
 
 
 class QRCodeSVGConverter(BaseConverter):

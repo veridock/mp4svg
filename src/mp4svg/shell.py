@@ -3,22 +3,19 @@ Interactive CLI shell for mp4svg
 Provides a command-line interface with tab completion, history, and interactive features
 """
 
+import cmd
 import os
 import sys
-import cmd
 import shlex
-import readline
-import atexit
 import tempfile
+import traceback
 from pathlib import Path
-from typing import Optional, List, Dict, Any
 
 from . import (
-    ASCII85SVGConverter, PolyglotSVGConverter, SVGVectorFrameConverter,
-    QRCodeSVGConverter, HybridSVGConverter
+    get_converter, list_converters, CONVERTER_REGISTRY,
+    EncodingError, DecodingError, ValidationError
 )
 from .validators import SVGValidator, IntegrityValidator
-from .base import EncodingError, DecodingError
 
 
 class MP4SVGShell(cmd.Cmd):
@@ -39,20 +36,17 @@ class MP4SVGShell(cmd.Cmd):
         super().__init__(*args, **kwargs)
         
         # Initialize converters
-        self.converters = {
-            'ascii85': ASCII85SVGConverter(),
-            'polyglot': PolyglotSVGConverter(),
-            'vector': SVGVectorFrameConverter(),
-            'qrcode': QRCodeSVGConverter(),
-            'hybrid': HybridSVGConverter()
-        }
+        self.converters = {}
+        for name in list_converters():
+            converter_class = get_converter(name)
+            self.converters[name] = converter_class()
         
         # Initialize validators
         self.svg_validator = SVGValidator()
         self.integrity_validator = IntegrityValidator()
         
         # Shell state
-        self.current_method = 'ascii85'
+        self.current_method = list(self.converters.keys())[0]
         self.output_dir = os.getcwd()
         self.last_converted = None
         self.conversion_history = []

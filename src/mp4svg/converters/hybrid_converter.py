@@ -4,11 +4,11 @@ Hybrid converter that combines all encoding methods for optimal storage
 
 import os
 from typing import Dict, Any
-from .ascii85 import ASCII85SVGConverter
-from .polyglot import PolyglotSVGConverter
-from .vector import SVGVectorFrameConverter
-from .qrcode import QRCodeSVGConverter
-from .base import BaseConverter
+from ..base import BaseConverter, EncodingError, DecodingError
+from .ascii85_converter import ASCII85SVGConverter
+from .polyglot_converter import PolyglotSVGConverter
+from .vector_converter import SVGVectorFrameConverter
+from .qrcode_converter import QRCodeSVGConverter
 
 
 class HybridSVGConverter(BaseConverter):

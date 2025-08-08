@@ -65,6 +65,7 @@ check-all: lint type-check test ## Run all code quality checks
 
 # Build targets
 build: clean ## Build package
+	$(POETRY) version patch
 	$(POETRY) build
 
 build-wheel: clean ## Build wheel only

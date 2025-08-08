@@ -7,7 +7,7 @@ import os
 import hashlib
 from typing import Optional
 from lxml import etree
-from .base import BaseConverter, EncodingError, DecodingError
+from ..base import BaseConverter, EncodingError, DecodingError
 
 
 class PolyglotSVGConverter(BaseConverter):

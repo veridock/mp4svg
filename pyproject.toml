@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "mp4svg"
-version = "1.0.0"
+version = "1.0.2"
 description = "Convert MP4 videos to SVG containers using multiple encoding methods"
-authors = ["Your Name <your.email@example.com>"]
+authors = ["Tom Sapletta <info@softreck.dev>"]
 readme = "README.md"
-homepage = "https://github.com/yourusername/mp4svg"
-repository = "https://github.com/yourusername/mp4svg"
+homepage = "https://github.com/veridock/mp4svg"
+repository = "https://github.com/veridock/mp4svg"
 documentation = "https://mp4svg.readthedocs.io"
 keywords = ["video", "svg", "conversion", "ascii85", "polyglot"]
 classifiers = [

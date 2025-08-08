@@ -22,11 +22,10 @@ from pydantic import BaseModel, Field, validator
 import uvicorn
 
 from . import (
-    ASCII85SVGConverter, PolyglotSVGConverter, SVGVectorFrameConverter,
-    QRCodeSVGConverter, HybridSVGConverter
+    get_converter, list_converters, CONVERTER_REGISTRY,
+    EncodingError, DecodingError, ValidationError
 )
 from .validators import SVGValidator, IntegrityValidator
-from .base import EncodingError, DecodingError
 
 
 # Pydantic models for API requests/responses
@@ -164,13 +163,10 @@ def create_app() -> FastAPI:
     )
     
     # Initialize converters
-    converters = {
-        'ascii85': ASCII85SVGConverter(),
-        'polyglot': PolyglotSVGConverter(),
-        'vector': SVGVectorFrameConverter(),
-        'qrcode': QRCodeSVGConverter(),
-        'hybrid': HybridSVGConverter()
-    }
+    converters = {}
+    for name in list_converters():
+        converter_class = get_converter(name)
+        converters[name] = converter_class()
     
     # Initialize validators
     svg_validator = SVGValidator()

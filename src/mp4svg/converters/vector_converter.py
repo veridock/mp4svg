@@ -8,7 +8,7 @@ import cv2
 import numpy as np
 from lxml import etree
 from xml.dom import minidom
-from .base import BaseConverter, EncodingError
+from ..base import BaseConverter, EncodingError
 
 
 class SVGVectorFrameConverter(BaseConverter):
