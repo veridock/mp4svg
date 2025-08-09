@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Binary Video Storage in SVG - Zero Loss Method</title>
+    <style>
+        body {
+            margin: 0;
+            background: #0a0a0a;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .method {
+            border: 2px solid #0f0;
+            padding: 20px;
+            margin: 20px 0;
+            background: rgba(0,255,0,0.05);
+        }
+        video {
+            width: 100%;
+            max-width: 640px;
+            border: 1px solid #0f0;
+        }
+        pre {
+            background: #000;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #0a0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Binary Video in SVG - Zero Loss Storage</h1>
+        
+        <!-- Method 1: Custom Namespace with Safe Binary Encoding -->
+        <div class="method">
+            <h2>Method 1: Custom Namespace Binary Container</h2>
+            <p>Stores raw binary in custom namespace using safe encoding (0% data loss)</p>
+            
+            <svg id="svg-binary-container" 
+                 xmlns="http://www.w3.org/2000/svg"
+                 xmlns:binary="data:application/octet-stream;base64,"
+                 width="800" height="100" viewBox="0 0 800 100"
+                 style="border: 1px solid #0f0;">
+                
+                <!-- Visual representation -->
+                <rect width="100%" height="100%" fill="#0a0a0a"/>
+                <text x="400" y="30" text-anchor="middle" fill="#0f0" font-size="16">
+                    SVG with Embedded Binary Video Data
+                </text>
+                <text x="400" y="50" text-anchor="middle" fill="#fff" font-size="12">
+                    Click "Extract & Play" to decode and play video
+                </text>
+                
+                <!-- Binary data stored in custom element (browser ignores unknown elements) -->
+                <binary:data id="video-binary-data" encoding="uint8-safe">
+                    <!-- Binary data will be inserted here by JavaScript -->
+                </binary:data>
+                
+                <!-- JavaScript decoder embedded in SVG -->
+                <script type="text/javascript"><![CDATA[
+                    // Decoder for binary data
+                    function extractBinaryFromSVG() {
+                        const dataElement = document.getElementById('video-binary-data');
+                        if (!dataElement) return null;
+                        
+                        const encodedData = dataElement.textContent.trim();
+                        return decodeSafeBinary(encodedData);
+                    }
+                    
+                    function decodeSafeBinary(encoded) {
+                        // Decode from safe format back to Uint8Array
+                        const bytes = [];
+                        for (let i = 0; i < encoded.length; i += 2) {
+                            bytes.push(parseInt(encoded.substr(i, 2), 16));
+                        }
+                        return new Uint8Array(bytes);
+                    }
+                ]]></script>
+            </svg>
+            
+            <div>
+                <button onclick="extractAndPlayMethod1()">Extract & Play Video</button>
+                <button onclick="downloadExtractedVideo()">Download Extracted MP4</button>
+            </div>
+            <video id="video-player-1" controls style="display:none; margin-top:10px;"></video>
+        </div>
+        
+        <!-- Method 2: Unicode Private Use Area -->
+        <div class="method">
+            <h2>Method 2: Unicode Private Use Area (PUA) Encoding</h2>
+            <p>Maps binary bytes to Unicode PUA characters (U+E000-U+E0FF)</p>
+            
+            <svg id="svg-pua-container"
+                 xmlns="http://www.w3.org/2000/svg"
+                 width="800" height="100" viewBox="0 0 800 100"
+                 style="border: 1px solid #0f0;">
+                
+                <rect width="100%" height="100%" fill="#0a0a0a"/>
+                <text x="400" y="50" text-anchor="middle" fill="#0f0" font-size="16">
+                    Unicode PUA Encoded Video
+                </text>
+                
+                <!-- Store binary as Unicode PUA characters in metadata -->
+                <metadata id="pua-video-data">
+                    <!-- Unicode PUA characters here (U+E000 to U+E0FF for bytes 0-255) -->
+                </metadata>
+            </svg>
+            
+            <button onclick="extractAndPlayMethod2()">Extract & Play Video</button>
+            <video id="video-player-2" controls style="display:none; margin-top:10px;"></video>
+        </div>
+        
+        <!-- Method 3: CDATA with Custom Base91 Encoding -->
+        <div class="method">
+            <h2>Method 3: CDATA with Base91 (Most Efficient Text Encoding)</h2>
+            <p>23% overhead vs 33% for Base64 - Best text-based method</p>
+            
+            <svg id="svg-base91-container"
+                 xmlns="http://www.w3.org/2000/svg"
+                 width="800" height="100" viewBox="0 0 800 100"
+                 style="border: 1px solid #0f0;">
+                
+                <rect width="100%" height="100%" fill="#0a0a0a"/>
+                <text x="400" y="50" text-anchor="middle" fill="#0f0" font-size="16">
+                    Base91 Encoded Video (23% overhead)
+                </text>
+                
+                <defs>
+                    <script id="base91-video-data" type="application/octet-stream">
+                        <![CDATA[
+                        <!-- Base91 encoded data here -->
+                        ]]>
+                    </script>
+                </defs>
+            </svg>
+            
+            <button onclick="extractAndPlayMethod3()">Extract & Play Video</button>
+            <video id="video-player-3" controls style="display:none; margin-top:10px;"></video>
+        </div>
+        
+        <!-- Method 4: Steganographic Path Encoding -->
+        <div class="method">
+            <h2>Method 4: Steganographic Path Data</h2>
+            <p>Hide binary data in SVG path coordinates (invisible storage)</p>
+            
+            <svg id="svg-stego-container"
+                 xmlns="http://www.w3.org/2000/svg"
+                 width="800" height="200" viewBox="0 0 800 200"
+                 style="border: 1px solid #0f0;">
+                
+                <rect width="100%" height="100%" fill="#0a0a0a"/>
+                <text x="400" y="30" text-anchor="middle" fill="#0f0" font-size="16">
+                    Steganographic Binary Storage
+                </text>
+                
+                <!-- Binary data hidden in path coordinates -->
+                <!-- Each byte encoded as decimal coordinate -->
+                <g id="stego-paths" opacity="0.01">
+                    <!-- Paths will be generated here -->
+                </g>
+            </svg>
+            
+            <button onclick="extractAndPlayMethod4()">Extract & Play Video</button>
+            <video id="video-player-4" controls style="display:none; margin-top:10px;"></video>
+        </div>
+        
+        <!-- File Input for Testing -->
+        <div class="method">
+            <h2>Test with Your Video</h2>
+            <input type="file" id="video-input" accept="video/mp4,video/webm">
+            <button onclick="processUserVideo()">Process Video</button>
+            <div id="stats" style="margin-top:10px;"></div>
+        </div>
+        
+        <!-- Code Examples -->
+        <div class="method">
+            <h2>Implementation Code</h2>
+            <pre id="code-display"></pre>
+        </div>
+    </div>
+    
+    <script>
+        // Wait for the DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // ============================================
+            // Binary Encoding/Decoding Functions
+            // ============================================
+            
+            // Method 1: Hexadecimal encoding (safe for XML)
+            function encodeBinaryToHex(uint8Array) {
+                return Array.from(uint8Array)
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join('');
+            }
+        
+        function decodeHexToBinary(hex) {
+            const bytes = [];
+            for (let i = 0; i < hex.length; i += 2) {
+                bytes.push(parseInt(hex.substr(i, 2), 16));
+            }
+            return new Uint8Array(bytes);
+        }
+        
+        // Method 2: Unicode Private Use Area encoding
+        function encodeBinaryToPUA(uint8Array) {
+            // Map each byte (0-255) to Unicode PUA (U+E000-U+E0FF)
+            return Array.from(uint8Array)
+                .map(b => String.fromCharCode(0xE000 + b))
+                .join('');
+        }
+        
+        function decodePUAToBinary(puaString) {
+            const bytes = [];
+            for (let i = 0; i < puaString.length; i++) {
+                const code = puaString.charCodeAt(i);
+                if (code >= 0xE000 && code <= 0xE0FF) {
+                    bytes.push(code - 0xE000);
+                }
+            }
+            return new Uint8Array(bytes);
+        }
+        
+        // Method 3: Base91 encoding (most efficient text encoding)
+        class Base91 {
+            constructor() {
+                this.alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$%&()*+,./:;<=>?@[]^_`{|}~"';
+                this.decode_table = {};
+                for (let i = 0; i < this.alphabet.length; i++) {
+                    this.decode_table[this.alphabet[i]] = i;
+                }
+            }
+            
+            encode(data) {
+                let v = 0, b = 0, n = 0;
+                let output = '';
+                
+                for (let i = 0; i < data.length; i++) {
+                    b |= data[i] << n;
+                    n += 8;
+                    
+                    if (n > 13) {
+                        v = b & 8191;
+                        if (v > 88) {
+                            b >>= 13;
+                            n -= 13;
+                        } else {
+                            v = b & 16383;
+                            b >>= 14;
+                            n -= 14;
+                        }
+                        output += this.alphabet[v % 91] + this.alphabet[Math.floor(v / 91)];
+                    }
+                }
+                
+                if (n) {
+                    output += this.alphabet[b % 91];
+                    if (n > 7 || b > 90) {
+                        output += this.alphabet[Math.floor(b / 91)];
+                    }
+                }
+                
+                return output;
+            }
+            
+            decode(str) {
+                const output = [];
+                let v = -1, b = 0, n = 0;
+                
+                for (let i = 0; i < str.length; i++) {
+                    const c = this.decode_table[str[i]];
+                    if (c === undefined) continue;
+                    
+                    if (v < 0) {
+                        v = c;
+                    } else {
+                        v += c * 91;
+                        b |= v << n;
+                        n += (v & 8191) > 88 ? 13 : 14;
+                        
+                        do {
+                            output.push(b & 0xFF);
+                            b >>= 8;
+                            n -= 8;
+                        } while (n > 7);
+                        
+                        v = -1;
+                    }
+                }
+                
+                if (v >= 0) {
+                    output.push((b | v << n) & 0xFF);
+                }
+                
+                return new Uint8Array(output);
+            }
+        }
+        
+        const base91 = new Base91();
+        
+        // Method 4: Steganographic path encoding
+        function encodeBinaryToPath(uint8Array) {
+            // Hide each byte as a coordinate in an invisible path
+            const paths = [];
+            const chunkSize = 1000; // SVG path length limit
+            
+            for (let i = 0; i < uint8Array.length; i += chunkSize) {
+                const chunk = uint8Array.slice(i, i + chunkSize);
+                let path = 'M';
+                
+                for (let j = 0; j < chunk.length; j++) {
+                    // Encode byte as decimal coordinate
+                    const x = (j % 100) * 8; // Position
+                    const y = chunk[j]; // Byte value (0-255)
+                    path += `${x}.${chunk[j].toString().padStart(3, '0')},${y} `;
+                    
+                    if (j % 100 === 99) {
+                        path += 'M'; // Start new subpath every 100 points
+                    }
+                }
+                
+                paths.push(path);
+            }
+            
+            return paths;
+        }
+        
+        function decodePathToBinary(paths) {
+            const bytes = [];
+            
+            for (const path of paths) {
+                // Extract decimal parts which contain our byte values
+                const matches = path.matchAll(/\.(\d{3})/g);
+                for (const match of matches) {
+                    bytes.push(parseInt(match[1]));
+                }
+            }
+            
+            return new Uint8Array(bytes);
+        }
+        
+        // ============================================
+        // Video Embedding & Extraction
+        // ============================================
+        
+        async function embedVideoInSVG(videoFile, method = 1) {
+            const arrayBuffer = await videoFile.arrayBuffer();
+            const uint8Array = new Uint8Array(arrayBuffer);
+            
+            console.log(`Original size: ${uint8Array.length} bytes`);
+            
+            let svgElement, encodedData;
+            
+            switch(method) {
+                case 1: // Hex in custom namespace
+                    encodedData = encodeBinaryToHex(uint8Array);
+                    svgElement = document.getElementById('svg-binary-container');
+                    const binaryElement = svgElement.querySelector('binary\\:data');
+                    if (binaryElement) {
+                        binaryElement.textContent = encodedData;
+                    }
+                    console.log(`Hex encoded size: ${encodedData.length} chars (${(encodedData.length/uint8Array.length*100).toFixed(1)}% of original)`);
+                    break;
+                    
+                case 2: // Unicode PUA
+                    encodedData = encodeBinaryToPUA(uint8Array);
+                    svgElement = document.getElementById('svg-pua-container');
+                    const metadataElement = svgElement.querySelector('metadata');
+                    if (metadataElement) {
+                        metadataElement.textContent = encodedData;
+                    }
+                    console.log(`PUA encoded size: ${encodedData.length} chars`);
+                    break;
+                    
+                case 3: // Base91
+                    encodedData = base91.encode(uint8Array);
+                    svgElement = document.getElementById('svg-base91-container');
+                    const scriptElement = svgElement.querySelector('script');
+                    if (scriptElement) {
+                        scriptElement.textContent = encodedData;
+                    }
+                    console.log(`Base91 encoded size: ${encodedData.length} chars (${(encodedData.length/uint8Array.length*100).toFixed(1)}% of original)`);
+                    break;
+                    
+                case 4: // Steganographic paths
+                    const paths = encodeBinaryToPath(uint8Array);
+                    svgElement = document.getElementById('svg-stego-container');
+                    const pathGroup = svgElement.querySelector('#stego-paths');
+                    pathGroup.innerHTML = '';
+                    
+                    paths.forEach((pathData, i) => {
+                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        path.setAttribute('d', pathData);
+                        path.setAttribute('stroke', 'none');
+                        path.setAttribute('fill', 'none');
+                        path.setAttribute('data-chunk', i);
+                        pathGroup.appendChild(path);
+                    });
+                    console.log(`Created ${paths.length} invisible paths`);
+                    break;
+            }
+            
+            // Update stats
+            updateStats(videoFile, uint8Array.length, encodedData ? encodedData.length : 0);
+            
+            return uint8Array;
+        }
+        
+        function createVideoFromBinary(uint8Array, videoPlayerId) {
+            // Create blob from binary data
+            const blob = new Blob([uint8Array], {type: 'video/mp4'});
+            const url = URL.createObjectURL(blob);
+            
+            // Set video source
+            const videoPlayer = document.getElementById(videoPlayerId);
+            videoPlayer.src = url;
+            videoPlayer.style.display = 'block';
+            
+            // Clean up URL when done
+            videoPlayer.addEventListener('loadeddata', () => {
+                console.log('Video loaded successfully!');
+            });
+            
+            return url;
+        }
+        
+        // ============================================
+        // Extraction Functions for Each Method
+        // ============================================
+        
+        function extractAndPlayMethod1() {
+            const svgElement = document.getElementById('svg-binary-container');
+            const binaryElement = svgElement.querySelector('binary\\:data');
+            
+            if (binaryElement) {
+                const hexData = binaryElement.textContent.trim();
+                const uint8Array = decodeHexToBinary(hexData);
+                createVideoFromBinary(uint8Array, 'video-player-1');
+                console.log('Extracted video from hex encoding:', uint8Array.length, 'bytes');
+            }
+        }
+        
+        function extractAndPlayMethod2() {
+            const svgElement = document.getElementById('svg-pua-container');
+            const metadataElement = svgElement.querySelector('metadata');
+            
+            if (metadataElement) {
+                const puaData = metadataElement.textContent;
+                const uint8Array = decodePUAToBinary(puaData);
+                createVideoFromBinary(uint8Array, 'video-player-2');
+                console.log('Extracted video from PUA encoding:', uint8Array.length, 'bytes');
+            }
+        }
+        
+        function extractAndPlayMethod3() {
+            const svgElement = document.getElementById('svg-base91-container');
+            const scriptElement = svgElement.querySelector('script');
+            
+            if (scriptElement) {
+                const base91Data = scriptElement.textContent.trim();
+                const uint8Array = base91.decode(base91Data);
+                createVideoFromBinary(uint8Array, 'video-player-3');
+                console.log('Extracted video from Base91 encoding:', uint8Array.length, 'bytes');
+            }
+        }
+        
+        function extractAndPlayMethod4() {
+            const svgElement = document.getElementById('svg-stego-container');
+            const paths = svgElement.querySelectorAll('#stego-paths path');
+            
+            const pathStrings = Array.from(paths).map(p => p.getAttribute('d'));
+            const uint8Array = decodePathToBinary(pathStrings);
+            createVideoFromBinary(uint8Array, 'video-player-4');
+            console.log('Extracted video from steganographic paths:', uint8Array.length, 'bytes');
+        }
+        
+        // ============================================
+        // User Interface Functions
+        // ============================================
+        
+        async function processUserVideo() {
+            const input = document.getElementById('video-input');
+            if (!input.files[0]) {
+                alert('Please select a video file');
+                return;
+            }
+            
+            const file = input.files[0];
+            console.log('Processing:', file.name, file.size, 'bytes');
+            
+            // Embed in all methods
+            for (let method = 1; method <= 4; method++) {
+                await embedVideoInSVG(file, method);
+            }
+            
+            alert('Video embedded in all SVG containers! Click extract buttons to play.');
+        }
+        
+        function updateStats(file, originalSize, encodedSize) {
+            const stats = document.getElementById('stats');
+            const overhead = ((encodedSize / originalSize - 1) * 100).toFixed(1);
+            
+            stats.innerHTML = `
+                <strong>File:</strong> ${file.name}<br>
+                <strong>Original:</strong> ${originalSize.toLocaleString()} bytes<br>
+                <strong>Encoded:</strong> ${encodedSize.toLocaleString()} chars<br>
+                <strong>Overhead:</strong> ${overhead}%
+            `;
+        }
+        
+        function downloadExtractedVideo() {
+            const svgElement = document.getElementById('svg-binary-container');
+            const binaryElement = svgElement.querySelector('binary\\:data');
+            
+            if (binaryElement) {
+                const hexData = binaryElement.textContent.trim();
+                const uint8Array = decodeHexToBinary(hexData);
+                
+                const blob = new Blob([uint8Array], {type: 'video/mp4'});
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'extracted_video.mp4';
+                a.click();
+                
+                URL.revokeObjectURL(url);
+            }
+        }
+        
+        // ============================================
+        // Example: Create test video data
+        // ============================================
+        
+        function createTestVideoData() {
+            // Create a small test "video" (actually just binary data for demo)
+            const testData = new Uint8Array(1000);
+            for (let i = 0; i < testData.length; i++) {
+                testData[i] = Math.floor(Math.random() * 256);
+            }
+            
+            // Add MP4 file signature for realism
+            testData[0] = 0x00; testData[1] = 0x00; testData[2] = 0x00; testData[3] = 0x20;
+            testData[4] = 0x66; testData[5] = 0x74; testData[6] = 0x79; testData[7] = 0x70;
+            
+            return testData;
+        }
+        
+        // ============================================
+        // Show implementation code
+        // ============================================
+        
+        document.getElementById('code-display').textContent = `
+// METODA 1: Bezpośrednie osadzenie binarnych danych w SVG
+// Zero strat, 100% odtwarzalność
+
+function embedBinaryInSVG(videoBytes) {
+    // Konwertuj na hex (2x rozmiar, ale 100% bezpieczne dla XML)
+    const hexString = Array.from(videoBytes)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+    
+    // Wstaw do SVG z custom namespace
+    const svg = \`<svg xmlns="http://www.w3.org/2000/svg"
+                      xmlns:video="data:video/mp4">
+        <video:binary>\${hexString}</video:binary>
+        <script><![CDATA[
+            // Dekoder w SVG
+            function playVideo() {
+                const hex = document.querySelector('video\\\\:binary').textContent;
+                const bytes = [];
+                for (let i = 0; i < hex.length; i += 2) {
+                    bytes.push(parseInt(hex.substr(i, 2), 16));
+                }
+                const blob = new Blob([new Uint8Array(bytes)], {type: 'video/mp4'});
+                const video = document.createElement('video');
+                video.src = URL.createObjectURL(blob);
+                video.controls = true;
+                document.body.appendChild(video);
+            }
+        ]]></script>
+    </svg>\`;
+    
+    return svg;
+}
+
+// METODA 2: Unicode Private Use Area (najbardziej kompaktowa)
+function embedUsingPUA(videoBytes) {
+    // Mapuj każdy bajt na znak Unicode PUA
+    const puaString = Array.from(videoBytes)
+        .map(b => String.fromCharCode(0xE000 + b))
+        .join('');
+    
+    // SVG z PUA (50% mniejszy niż hex!)
+    return \`<svg xmlns="http://www.w3.org/2000/svg">
+        <metadata>\${puaString}</metadata>
+    </svg>\`;
+}
+
+// METODA 3: Base91 (tylko 23% overhead)
+// Najlepsza metoda tekstowa - lepsza niż Base64!
+`;
+        
+                // Initialize with test data
+            (function init() {
+            const testData = createTestVideoData();
+            
+            // Embed test data in Method 1
+            const hexData = encodeBinaryToHex(testData);
+            const binaryElement = document.querySelector('#svg-binary-container binary\\:data');
+            if (binaryElement) {
+                binaryElement.textContent = hexData;
+            }
+            
+            console.log('Test data embedded. Original:', testData.length, 'bytes');
+            console.log('Available extraction methods:');
+            console.log('- extractAndPlayMethod1() - Hex encoding');
+            console.log('- extractAndPlayMethod2() - Unicode PUA');
+            console.log('- extractAndPlayMethod3() - Base91');
+                console.log('- extractAndPlayMethod4() - Steganographic paths');
+            })();
+        }); // End of DOMContentLoaded
+    </script>
+</body>
+</html>
