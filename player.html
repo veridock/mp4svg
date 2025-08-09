@@ -567,56 +567,60 @@
         // Show implementation code
         // ============================================
         
-        document.getElementById('code-display').textContent = `
-// METODA 1: Bezpośrednie osadzenie binarnych danych w SVG
-// Zero strat, 100% odtwarzalność
-
-function embedBinaryInSVG(videoBytes) {
-    // Konwertuj na hex (2x rozmiar, ale 100% bezpieczne dla XML)
-    const hexString = Array.from(videoBytes)
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-    
-    // Wstaw do SVG z custom namespace
-    const svg = \`<svg xmlns="http://www.w3.org/2000/svg"
-                      xmlns:video="data:video/mp4">
-        <video:binary>\${hexString}</video:binary>
-        <script><![CDATA[
-            // Dekoder w SVG
-            function playVideo() {
-                const hex = document.querySelector('video\\\\:binary').textContent;
-                const bytes = [];
-                for (let i = 0; i < hex.length; i += 2) {
-                    bytes.push(parseInt(hex.substr(i, 2), 16));
-                }
-                const blob = new Blob([new Uint8Array(bytes)], {type: 'video/mp4'});
-                const video = document.createElement('video');
-                video.src = URL.createObjectURL(blob);
-                video.controls = true;
-                document.body.appendChild(video);
-            }
-        ]]></script>
-    </svg>\`;
-    
-    return svg;
-}
-
-// METODA 2: Unicode Private Use Area (najbardziej kompaktowa)
-function embedUsingPUA(videoBytes) {
-    // Mapuj każdy bajt na znak Unicode PUA
-    const puaString = Array.from(videoBytes)
-        .map(b => String.fromCharCode(0xE000 + b))
-        .join('');
-    
-    // SVG z PUA (50% mniejszy niż hex!)
-    return \`<svg xmlns="http://www.w3.org/2000/svg">
-        <metadata>\${puaString}</metadata>
-    </svg>\`;
-}
-
-// METODA 3: Base91 (tylko 23% overhead)
-// Najlepsza metoda tekstowa - lepsza niż Base64!
-`;
+        // Create a code display with proper escaping
+        const codeDisplay = document.getElementById('code-display');
+        const codeContent = [
+            '// METODA 1: Bezpośrednie osadzenie binarnych danych w SVG',
+            '// Zero strat, 100% odtwarzalność',
+            '',
+            'function embedBinaryInSVG(videoBytes) {',
+            '    // Konwertuj na hex (2x rozmiar, ale 100% bezpieczne dla XML)',
+            '    const hexString = Array.from(videoBytes)',
+            '        .map(b => b.toString(16).padStart(2, \'0\'))',
+            '        .join(\'\');',
+            '    ',
+            '    // Wstaw do SVG z custom namespace',
+            '    const svg = `<svg xmlns="http://www.w3.org/2000/svg"',
+            '                      xmlns:video="data:video/mp4">',
+            '        <video:binary>${hexString}</video:binary>',
+            '        <script><![CDATA[',
+            '            // Dekoder w SVG',
+            '            function playVideo() {',
+            '                const hex = document.querySelector(\'video\\\\:binary\').textContent;',
+            '                const bytes = [];',
+            '                for (let i = 0; i < hex.length; i += 2) {',
+            '                    bytes.push(parseInt(hex.substr(i, 2), 16));',
+            '                }',
+            '                const blob = new Blob([new Uint8Array(bytes)], {type: \'video/mp4\'});',
+            '                const video = document.createElement(\'video\');',
+            '                video.src = URL.createObjectURL(blob);',
+            '                video.controls = true;',
+            '                document.body.appendChild(video);',
+            '            }',
+            '        ]]>\x3C/script>',
+            '    </svg>`;',
+            '    ',
+            '    return svg;',
+            '}',
+            '',
+            '// METODA 2: Unicode Private Use Area (najbardziej kompaktowa)',
+            'function embedUsingPUA(videoBytes) {',
+            '    // Mapuj każdy bajt na znak Unicode PUA',
+            '    const puaString = Array.from(videoBytes)',
+            '        .map(b => String.fromCharCode(0xE000 + b))',
+            '        .join(\'\');',
+            '    ',
+            '    // SVG z PUA (50% mniejszy niż hex!)',
+            '    return `<svg xmlns="http://www.w3.org/2000/svg">',
+            '        <metadata>${puaString}</metadata>',
+            '    </svg>`;',
+            '}',
+            '',
+            '// METODA 3: Base91 (tylko 23% overhead)',
+            '// Najlepsza metoda tekstowa - lepsza niż Base64!'
+        ].join('\n');
+        
+        codeDisplay.textContent = codeContent;
         
             // Initialize with test data
             (function init() {
