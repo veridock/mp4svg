@@ -211,150 +211,150 @@
                     .join('');
             }
         
-        function decodeHexToBinary(hex) {
-            const bytes = [];
-            for (let i = 0; i < hex.length; i += 2) {
-                bytes.push(parseInt(hex.substr(i, 2), 16));
-            }
-            return new Uint8Array(bytes);
-        }
-        
-        // Method 2: Unicode Private Use Area encoding
-        function encodeBinaryToPUA(uint8Array) {
-            // Map each byte (0-255) to Unicode PUA (U+E000-U+E0FF)
-            return Array.from(uint8Array)
-                .map(b => String.fromCharCode(0xE000 + b))
-                .join('');
-        }
-        
-        function decodePUAToBinary(puaString) {
-            const bytes = [];
-            for (let i = 0; i < puaString.length; i++) {
-                const code = puaString.charCodeAt(i);
-                if (code >= 0xE000 && code <= 0xE0FF) {
-                    bytes.push(code - 0xE000);
+            function decodeHexToBinary(hex) {
+                const bytes = [];
+                for (let i = 0; i < hex.length; i += 2) {
+                    bytes.push(parseInt(hex.substr(i, 2), 16));
                 }
-            }
-            return new Uint8Array(bytes);
-        }
-        
-        // Method 3: Base91 encoding (most efficient text encoding)
-        class Base91 {
-            constructor() {
-                this.alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$%&()*+,./:;<=>?@[]^_`{|}~"';
-                this.decode_table = {};
-                for (let i = 0; i < this.alphabet.length; i++) {
-                    this.decode_table[this.alphabet[i]] = i;
-                }
+                return new Uint8Array(bytes);
             }
             
-            encode(data) {
-                let v = 0, b = 0, n = 0;
-                let output = '';
+            // Method 2: Unicode Private Use Area encoding
+            function encodeBinaryToPUA(uint8Array) {
+                // Map each byte (0-255) to Unicode PUA (U+E000-U+E0FF)
+                return Array.from(uint8Array)
+                    .map(b => String.fromCharCode(0xE000 + b))
+                    .join('');
+            }
+            
+            function decodePUAToBinary(puaString) {
+                const bytes = [];
+                for (let i = 0; i < puaString.length; i++) {
+                    const code = puaString.charCodeAt(i);
+                    if (code >= 0xE000 && code <= 0xE0FF) {
+                        bytes.push(code - 0xE000);
+                    }
+                }
+                return new Uint8Array(bytes);
+            }
+            
+            // Method 3: Base91 encoding (most efficient text encoding)
+            class Base91 {
+                constructor() {
+                    this.alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$%&()*+,./:;<=>?@[]^_`{|}~"';
+                    this.decode_table = {};
+                    for (let i = 0; i < this.alphabet.length; i++) {
+                        this.decode_table[this.alphabet[i]] = i;
+                    }
+                }
                 
-                for (let i = 0; i < data.length; i++) {
-                    b |= data[i] << n;
-                    n += 8;
+                encode(data) {
+                    let v = 0, b = 0, n = 0;
+                    let output = '';
                     
-                    if (n > 13) {
-                        v = b & 8191;
-                        if (v > 88) {
-                            b >>= 13;
-                            n -= 13;
-                        } else {
-                            v = b & 16383;
-                            b >>= 14;
-                            n -= 14;
+                    for (let i = 0; i < data.length; i++) {
+                        b |= data[i] << n;
+                        n += 8;
+                        
+                        if (n > 13) {
+                            v = b & 8191;
+                            if (v > 88) {
+                                b >>= 13;
+                                n -= 13;
+                            } else {
+                                v = b & 16383;
+                                b >>= 14;
+                                n -= 14;
+                            }
+                            output += this.alphabet[v % 91] + this.alphabet[Math.floor(v / 91)];
                         }
-                        output += this.alphabet[v % 91] + this.alphabet[Math.floor(v / 91)];
                     }
-                }
-                
-                if (n) {
-                    output += this.alphabet[b % 91];
-                    if (n > 7 || b > 90) {
-                        output += this.alphabet[Math.floor(b / 91)];
-                    }
-                }
-                
-                return output;
-            }
-            
-            decode(str) {
-                const output = [];
-                let v = -1, b = 0, n = 0;
-                
-                for (let i = 0; i < str.length; i++) {
-                    const c = this.decode_table[str[i]];
-                    if (c === undefined) continue;
                     
-                    if (v < 0) {
-                        v = c;
-                    } else {
-                        v += c * 91;
-                        b |= v << n;
-                        n += (v & 8191) > 88 ? 13 : 14;
-                        
-                        do {
-                            output.push(b & 0xFF);
-                            b >>= 8;
-                            n -= 8;
-                        } while (n > 7);
-                        
-                        v = -1;
+                    if (n) {
+                        output += this.alphabet[b % 91];
+                        if (n > 7 || b > 90) {
+                            output += this.alphabet[Math.floor(b / 91)];
+                        }
                     }
-                }
-                
-                if (v >= 0) {
-                    output.push((b | v << n) & 0xFF);
-                }
-                
-                return new Uint8Array(output);
-            }
-        }
-        
-        const base91 = new Base91();
-        
-        // Method 4: Steganographic path encoding
-        function encodeBinaryToPath(uint8Array) {
-            // Hide each byte as a coordinate in an invisible path
-            const paths = [];
-            const chunkSize = 1000; // SVG path length limit
-            
-            for (let i = 0; i < uint8Array.length; i += chunkSize) {
-                const chunk = uint8Array.slice(i, i + chunkSize);
-                let path = 'M';
-                
-                for (let j = 0; j < chunk.length; j++) {
-                    // Encode byte as decimal coordinate
-                    const x = (j % 100) * 8; // Position
-                    const y = chunk[j]; // Byte value (0-255)
-                    path += `${x}.${chunk[j].toString().padStart(3, '0')},${y} `;
                     
-                    if (j % 100 === 99) {
-                        path += 'M'; // Start new subpath every 100 points
+                    return output;
+                }
+                
+                decode(str) {
+                    const output = [];
+                    let v = -1, b = 0, n = 0;
+                    
+                    for (let i = 0; i < str.length; i++) {
+                        const c = this.decode_table[str[i]];
+                        if (c === undefined) continue;
+                        
+                        if (v < 0) {
+                            v = c;
+                        } else {
+                            v += c * 91;
+                            b |= v << n;
+                            n += (v & 8191) > 88 ? 13 : 14;
+                            
+                            do {
+                                output.push(b & 0xFF);
+                                b >>= 8;
+                                n -= 8;
+                            } while (n > 7);
+                            
+                            v = -1;
+                        }
+                    }
+                    
+                    if (v >= 0) {
+                        output.push((b | v << n) & 0xFF);
+                    }
+                    
+                    return new Uint8Array(output);
+                }
+            }
+            
+            const base91 = new Base91();
+            
+            // Method 4: Steganographic path encoding
+            function encodeBinaryToPath(uint8Array) {
+                // Hide each byte as a coordinate in an invisible path
+                const paths = [];
+                const chunkSize = 1000; // SVG path length limit
+                
+                for (let i = 0; i < uint8Array.length; i += chunkSize) {
+                    const chunk = uint8Array.slice(i, i + chunkSize);
+                    let path = 'M';
+                    
+                    for (let j = 0; j < chunk.length; j++) {
+                        // Encode byte as decimal coordinate
+                        const x = (j % 100) * 8; // Position
+                        const y = chunk[j]; // Byte value (0-255)
+                        path += `${x}.${chunk[j].toString().padStart(3, '0')},${y} `;
+                        
+                        if (j % 100 === 99) {
+                            path += 'M'; // Start new subpath every 100 points
+                        }
+                    }
+                    
+                    paths.push(path);
+                }
+                
+                return paths;
+            }
+            
+            function decodePathToBinary(paths) {
+                const bytes = [];
+                
+                for (const path of paths) {
+                    // Extract decimal parts which contain our byte values
+                    const matches = path.matchAll(/\.(\d{3})/g);
+                    for (const match of matches) {
+                        bytes.push(parseInt(match[1]));
                     }
                 }
                 
-                paths.push(path);
+                return new Uint8Array(bytes);
             }
-            
-            return paths;
-        }
-        
-        function decodePathToBinary(paths) {
-            const bytes = [];
-            
-            for (const path of paths) {
-                // Extract decimal parts which contain our byte values
-                const matches = path.matchAll(/\.(\d{3})/g);
-                for (const match of matches) {
-                    bytes.push(parseInt(match[1]));
-                }
-            }
-            
-            return new Uint8Array(bytes);
-        }
         
         // ============================================
         // Video Embedding & Extraction
@@ -445,7 +445,7 @@
         // Extraction Functions for Each Method
         // ============================================
         
-        function extractAndPlayMethod1() {
+        window.extractAndPlayMethod1 = function() {
             const svgElement = document.getElementById('svg-binary-container');
             const binaryElement = svgElement.querySelector('binary\\:data');
             
@@ -457,7 +457,7 @@
             }
         }
         
-        function extractAndPlayMethod2() {
+        window.extractAndPlayMethod2 = function() {
             const svgElement = document.getElementById('svg-pua-container');
             const metadataElement = svgElement.querySelector('metadata');
             
@@ -469,7 +469,7 @@
             }
         }
         
-        function extractAndPlayMethod3() {
+        window.extractAndPlayMethod3 = function() {
             const svgElement = document.getElementById('svg-base91-container');
             const scriptElement = svgElement.querySelector('script');
             
@@ -481,7 +481,7 @@
             }
         }
         
-        function extractAndPlayMethod4() {
+        window.extractAndPlayMethod4 = function() {
             const svgElement = document.getElementById('svg-stego-container');
             const paths = svgElement.querySelectorAll('#stego-paths path');
             
@@ -495,7 +495,7 @@
         // User Interface Functions
         // ============================================
         
-        async function processUserVideo() {
+        window.processUserVideo = async function() {
             const input = document.getElementById('video-input');
             if (!input.files[0]) {
                 alert('Please select a video file');
@@ -513,7 +513,7 @@
             alert('Video embedded in all SVG containers! Click extract buttons to play.');
         }
         
-        function updateStats(file, originalSize, encodedSize) {
+        window.updateStats = function(file, originalSize, encodedSize) {
             const stats = document.getElementById('stats');
             const overhead = ((encodedSize / originalSize - 1) * 100).toFixed(1);
             
@@ -525,7 +525,7 @@
             `;
         }
         
-        function downloadExtractedVideo() {
+        window.downloadExtractedVideo = function() {
             const svgElement = document.getElementById('svg-binary-container');
             const binaryElement = svgElement.querySelector('binary\\:data');
             
@@ -549,7 +549,7 @@
         // Example: Create test video data
         // ============================================
         
-        function createTestVideoData() {
+        window.createTestVideoData = function() {
             // Create a small test "video" (actually just binary data for demo)
             const testData = new Uint8Array(1000);
             for (let i = 0; i < testData.length; i++) {
@@ -618,7 +618,7 @@ function embedUsingPUA(videoBytes) {
 // Najlepsza metoda tekstowa - lepsza niż Base64!
 `;
         
-                // Initialize with test data
+            // Initialize with test data
             (function init() {
             const testData = createTestVideoData();
             
