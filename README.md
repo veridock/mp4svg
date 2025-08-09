@@ -20,6 +20,11 @@ Convert MP4 videos to SVG files using various encoding methods. Supports **6 dif
 > GitHub i inne platformy markdown blokują JavaScript w SVG z bezpieczeństwa.  
 > Aby zobaczyć działające video z kontrolkami - otwórz link powyżej! 🎬
 
+
+## PLayer
+
+![img.png](player.png)
+
 ## ✨ Features
 
 - **6 Encoding Methods**: Polyglot, ASCII85, Base64, Vector, QR Code, Hybrid
