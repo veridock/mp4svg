@@ -46,6 +46,114 @@
     </style>
 </head>
 <body>
+    <!-- Component Templates -->
+    <div id="templates" style="display: none;">
+        <!-- SVG Structure Template -->
+        <template id="svg-structure">
+            <svg id="svg-base91-container"
+                 xmlns="http://www.w3.org/2000/svg"
+                 xmlns:xlink="http://www.w3.org/1999/xlink"
+                 width="100%" 
+                 height="100%"
+                 viewBox="0 0 100 100"
+                 preserveAspectRatio="xMidYMid meet"
+                 style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; border: none; background: #000;"
+                 onload="initBase91Player()">
+                <!-- Fullscreen background -->
+                <rect width="100%" height="100%" fill="#0a0a0a"/>
+                <!-- Header -->
+                <text x="50" y="5" text-anchor="middle" fill="#0f0" font-size="3" font-family="Arial, sans-serif">
+                    Base91 Encoded Video (23% overhead)
+                </text>
+                <!-- Video player container -->
+                <foreignObject x="10" y="10" width="80" height="80">
+                    <div xmlns="http://www.w3.org/1999/xhtml" style="width: 100%; height: 100%; position: relative; background: #000;">
+                        <video id="svg-video-player" 
+                               style="width: 100%; height: 100%; object-fit: contain; display: none;"
+                               controls>
+                            Your browser does not support the video tag.
+                        </video>
+                        <div id="status-message" 
+                             style="
+                                position: absolute;
+                                top: 50%;
+                                left: 50%;
+                                transform: translate(-50%, -50%);
+                                color: #0f0;
+                                font-family: monospace;
+                                font-size: 1.5vmin;
+                                background: rgba(0, 0, 0, 0.7);
+                                padding: 1vmin 2vmin;
+                                border-radius: 0.5vmin;
+                                white-space: nowrap;">
+                            Loading video...
+                        </div>
+                        <!-- Fullscreen toggle button -->
+                        <button id="fullscreen-btn" 
+                                onclick="toggleFullScreen()"
+                                style="
+                                    position: absolute;
+                                    bottom: 10px;
+                                    right: 10px;
+                                    background: rgba(0,0,0,0.7);
+                                    border: 1px solid #0f0;
+                                    color: #0f0;
+                                    padding: 5px 10px;
+                                    border-radius: 3px;
+                                    cursor: pointer;
+                                    font-size: 1.2vmin;
+                                    z-index: 10;">
+                            Toggle Fullscreen
+                        </button>
+                 onload="initBase91Player()">
+                <rect width="100%" height="100%" fill="#0a0a0a"/>
+                <text x="50" y="5" text-anchor="middle" fill="#0f0" font-size="3" font-family="Arial, sans-serif">
+                    Base91 Encoded Video (23% overhead)
+                </text>
+                <foreignObject x="5" y="8" width="90" height="87" class="video-container">
+                    <div xmlns="http://www.w3.org/1999/xhtml" style="width: 100%; height: 100%; position: relative;">
+                        <video id="svg-video-player" 
+                               style="display: none; width: 100%; height: 100%; object-fit: contain;"
+                               controls>
+                            Your browser does not support the video tag.
+                        </video>
+                        <div id="status-message" style="
+                            position: absolute;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            color: #0f0; 
+                            text-align: center; 
+                            font-family: Arial, sans-serif;
+                            font-size: 1.5vmin;
+                            background: rgba(0,0,0,0.7);
+                            padding: 1vmin 2vmin;
+                            border-radius: 0.5vmin;
+                            white-space: nowrap;">
+                            Loading video...
+                        </div>
+                        <button id="fullscreen-btn" 
+                                onclick="toggleFullScreen()"
+                                style="
+                                    position: absolute;
+                                    bottom: 10px;
+                                    right: 10px;
+                                    background: rgba(0,0,0,0.7);
+                                    border: 1px solid #0f0;
+                                    color: #0f0;
+                                    padding: 5px 10px;
+                                    border-radius: 3px;
+                                    cursor: pointer;
+                                    font-size: 1.2vmin;
+                                    z-index: 10;">
+                            Toggle Fullscreen
+                        </button>
+                    </div>
+                </foreignObject>
+            </svg>
+        </template>
+    </div>
+    
     <div class="container">
         <h1>🎬 Binary Video in SVG - Zero Loss Storage</h1>
         
@@ -99,6 +207,7 @@
             <div>
                 <button onclick="extractAndPlayMethod1()">Extract & Play Video</button>
                 <button onclick="downloadExtractedVideo()">Download Extracted MP4</button>
+                <button onclick="downloadSVG('svg-binary-container', 'method1_video.svg')">Download SVG</button>
             </div>
             <video id="video-player-1" controls style="display:none; margin-top:10px;"></video>
         </div>
@@ -124,7 +233,10 @@
                 </metadata>
             </svg>
             
-            <button onclick="extractAndPlayMethod2()">Extract & Play Video</button>
+            <div>
+                <button onclick="extractAndPlayMethod2()">Extract & Play Video</button>
+                <button onclick="downloadSVG('svg-pua-container', 'method2_pua_video.svg')">Download SVG</button>
+            </div>
             <video id="video-player-2" controls style="display:none; margin-top:10px;"></video>
         </div>
         
@@ -139,20 +251,160 @@
                  style="border: 1px solid #0f0;">
                 
                 <rect width="100%" height="100%" fill="#0a0a0a"/>
-                <text x="400" y="50" text-anchor="middle" fill="#0f0" font-size="16">
+                <text x="400" y="30" text-anchor="middle" fill="#0f0" font-size="16">
                     Base91 Encoded Video (23% overhead)
+                </text>
+                <text x="400" y="60" text-anchor="middle" fill="#0f0" font-size="12">
+                    Click "Extract & Play" to decode and play video
                 </text>
                 
                 <defs>
                     <script id="base91-video-data" type="application/octet-stream">
                         <![CDATA[
-                        <!-- Base91 encoded data here -->
+                        // Base91 encoded data will be inserted here
                         ]]>
+                    </script>
+                </defs>
+                
+                <defs>
+                    <script id="base91-video-data" type="application/octet-stream">
+                        <![CDATA[
+                        // Base91 encoded data will be inserted here
+                        ]]>
+                    </script>
+                    
+                    <script type="text/javascript">
+                    <![CDATA[
+                        // Fullscreen toggle function
+                        function toggleFullScreen() {
+                            const video = document.getElementById('svg-video-player');
+                            
+                            if (!document.fullscreenElement) {
+                                if (video.requestFullscreen) {
+                                    video.requestFullscreen();
+                                } else if (video.webkitRequestFullscreen) { /* Safari */
+                                    video.webkitRequestFullscreen();
+                                } else if (video.msRequestFullscreen) { /* IE11 */
+                                    video.msRequestFullscreen();
+                                }
+                            } else {
+                                if (document.exitFullscreen) {
+                                    document.exitFullscreen();
+                                } else if (document.webkitExitFullscreen) { /* Safari */
+                                    document.webkitExitFullscreen();
+                                } else if (document.msExitFullscreen) { /* IE11 */
+                                    document.msExitFullscreen();
+                                }
+                            }
+                        }
+                        
+                        // Base91 decoder implementation
+                        var base91 = {
+                            // Base91 encoding table - defined as a function to avoid syntax issues
+                            _b91chars: (function() {
+                                // Define all Base91 characters in a safe way
+                                var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                                return chars + '!"#$%&\'()*+,./:;<=>?@[\\]^_`{|}~';
+                            })(),
+                            
+                            // Decode Base91 string to Uint8Array
+                            decode: function(input) {
+                                var b = 0, n = 0, v = -1,
+                                    len = input.length,
+                                    out = [];
+                                
+                                for (var i = 0; i < len; i++) {
+                                    var c = this._b91chars.indexOf(input.charAt(i));
+                                    if (c === -1) continue;
+                                    
+                                    if (v < 0) {
+                                        v = c;
+                                    } else {
+                                        v += c * 91;
+                                        b |= v << n;
+                                        n += (v & 8191) > 88 ? 13 : 14;
+                                        do {
+                                            out.push(b & 0xff);
+                                            b >>= 8;
+                                            n -= 8;
+                                        } while (n > 7);
+                                        v = -1;
+                                    }
+                                }
+                                
+                                if (v + 1) {
+                                    out.push((b | v << n) & 0xff);
+                                }
+                                
+                                return new Uint8Array(out);
+                            }
+                        };
+                        
+                        // Initialize the player when SVG loads
+                        function initBase91Player() {
+                            const statusElement = document.getElementById('status-message');
+                            const video = document.getElementById('svg-video-player');
+                            
+                            try {
+                                const scriptElement = document.getElementById('base91-video-data');
+                                if (!scriptElement) {
+                                    throw new Error('Video data not found');
+                                }
+                                
+                                const base91Data = scriptElement.textContent.trim();
+                                if (!base91Data) {
+                                    throw new Error('No video data available');
+                                }
+                                
+                                statusElement.textContent = 'Decoding video data...';
+                                
+                                // Small delay to allow UI to update
+                                setTimeout(() => {
+                                    try {
+                                        // Decode the Base91 data
+                                        const uint8Array = base91.decode(base91Data);
+                                        
+                                        // Create a Blob URL for the video
+                                        const blob = new Blob([uint8Array], {type: 'video/mp4'});
+                                        const videoUrl = URL.createObjectURL(blob);
+                                        
+                                        // Set up the video element
+                                        video.src = videoUrl;
+                                        video.style.display = 'block';
+                                        statusElement.style.display = 'none';
+                                        
+                                        // Try to autoplay (may be blocked by browser policy)
+                                        const playPromise = video.play();
+                                        if (playPromise !== undefined) {
+                                            playPromise.catch(error => {
+                                                console.log('Autoplay prevented, showing controls');
+                                                video.controls = true;
+                                                statusElement.textContent = 'Click the play button to start video';
+                                                statusElement.style.display = 'block';
+                                            });
+                                        }
+                                    } catch (error) {
+                                        console.error('Error processing video:', error);
+                                        statusElement.textContent = 'Error loading video: ' + error.message;
+                                        statusElement.style.color = '#f00';
+                                    }
+                                }, 100);
+                                
+                            } catch (error) {
+                                console.error('Error initializing player:', error);
+                                statusElement.textContent = 'Error: ' + error.message;
+                                statusElement.style.color = '#f00';
+                            }
+                        }
+                    ]]>
                     </script>
                 </defs>
             </svg>
             
-            <button onclick="extractAndPlayMethod3()">Extract & Play Video</button>
+            <div>
+                <button onclick="extractAndPlayMethod3()">Extract & Play Video</button>
+                <button onclick="downloadSVG('svg-base91-container', 'method3_base91_video.svg')">Download SVG</button>
+            </div>
             <video id="video-player-3" controls style="display:none; margin-top:10px;"></video>
         </div>
         
@@ -178,7 +430,10 @@
                 </g>
             </svg>
             
-            <button onclick="extractAndPlayMethod4()">Extract & Play Video</button>
+            <div>
+                <button onclick="extractAndPlayMethod4()">Extract & Play Video</button>
+                <button onclick="downloadSVG('svg-stego-container', 'method4_stego_video.svg')">Download SVG</button>
+            </div>
             <video id="video-player-4" controls style="display:none; margin-top:10px;"></video>
         </div>
         
@@ -495,6 +750,7 @@
         // User Interface Functions
         // ============================================
         
+        // Make sure the function is globally available
         window.processUserVideo = async function() {
             const input = document.getElementById('video-input');
             if (!input.files[0]) {
@@ -546,101 +802,340 @@
         }
         
         // ============================================
-        // Example: Create test video data
+        // Global Function Exposure
         // ============================================
         
-        window.createTestVideoData = function() {
-            // Create a small test "video" (actually just binary data for demo)
-            const testData = new Uint8Array(1000);
-            for (let i = 0; i < testData.length; i++) {
-                testData[i] = Math.floor(Math.random() * 256);
+        // Make sure all necessary functions are available globally
+        window.extractAndPlayMethod1 = extractAndPlayMethod1;
+        window.extractAndPlayMethod2 = extractAndPlayMethod2;
+        window.extractAndPlayMethod3 = extractAndPlayMethod3;
+        window.extractAndPlayMethod4 = extractAndPlayMethod4;
+        window.processUserVideo = processUserVideo;
+        window.downloadExtractedVideo = downloadExtractedVideo;
+        
+        // ============================================
+        // SVG Download Function
+        // ============================================
+        
+        // Global function to download any SVG by ID
+        // This function is called when the user clicks the download button for any method
+        function downloadSVG(svgId, filename) {
+            // Special handling for Base91 SVG - use the component-based template
+            if (svgId === 'svg-base91-container') {
+                // Get the source SVG and video data
+                const sourceSvg = document.getElementById(svgId);
+                const videoDataScript = sourceSvg.querySelector('script[type="application/octet-stream"]');
+                
+                if (!videoDataScript) {
+                    console.error('No video data found in the source SVG');
+                    return;
+                }
+                
+                // Get the SVG structure template
+                const svgTemplate = document.getElementById('svg-structure');
+                if (!svgTemplate) {
+                    console.error('SVG template not found');
+                    return;
+                }
+                
+                // Clone the template content
+                const parser = new DOMParser();
+                const serializer = new XMLSerializer();
+                const svgString = serializer.serializeToString(svgTemplate.content);
+                const doc = parser.parseFromString(svgString, 'image/svg+xml');
+                const svgElement = doc.documentElement;
+                
+                // Find the video data script and update it
+                const dataScript = svgElement.querySelector('#base91-video-data');
+                if (dataScript) {
+                    dataScript.textContent = videoDataScript.textContent.trim();
+                }
+                
+                // Serialize the SVG and prepare for download
+                let svgString = serializer.serializeToString(svgElement);
+                
+                // Add XML declaration and DOCTYPE
+                const xmlDeclaration = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n';
+                const doctype = '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n';
+                
+                // Create and trigger download
+                const blob = new Blob([xmlDeclaration + doctype + svgString], { type: 'image/svg+xml' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename.endsWith('.svg') ? filename : `${filename}.svg`;
+                document.body.appendChild(a);
+                a.click();
+                
+                // Clean up
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 0);
+                
+                return;
             }
             
-            // Add MP4 file signature for realism
-            testData[0] = 0x00; testData[1] = 0x00; testData[2] = 0x00; testData[3] = 0x20;
-            testData[4] = 0x66; testData[5] = 0x74; testData[6] = 0x79; testData[7] = 0x70;
-            
-            return testData;
-        }
-        
-        // ============================================
-        // Show implementation code
-        // ============================================
-        
-        // Create a code display with proper escaping
-        const codeDisplay = document.getElementById('code-display');
-        const codeContent = [
-            '// METODA 1: Bezpośrednie osadzenie binarnych danych w SVG',
-            '// Zero strat, 100% odtwarzalność',
-            '',
-            'function embedBinaryInSVG(videoBytes) {',
-            '    // Konwertuj na hex (2x rozmiar, ale 100% bezpieczne dla XML)',
-            '    const hexString = Array.from(videoBytes)',
-            '        .map(b => b.toString(16).padStart(2, \'0\'))',
-            '        .join(\'\');',
-            '    ',
-            '    // Wstaw do SVG z custom namespace',
-            '    const svg = `<svg xmlns="http://www.w3.org/2000/svg"',
-            '                      xmlns:video="data:video/mp4">',
-            '        <video:binary>${hexString}</video:binary>',
-            '        <script><![CDATA[',
-            '            // Dekoder w SVG',
-            '            function playVideo() {',
-            '                const hex = document.querySelector(\'video\\\\:binary\').textContent;',
-            '                const bytes = [];',
-            '                for (let i = 0; i < hex.length; i += 2) {',
-            '                    bytes.push(parseInt(hex.substr(i, 2), 16));',
-            '                }',
-            '                const blob = new Blob([new Uint8Array(bytes)], {type: \'video/mp4\'});',
-            '                const video = document.createElement(\'video\');',
-            '                video.src = URL.createObjectURL(blob);',
-            '                video.controls = true;',
-            '                document.body.appendChild(video);',
-            '            }',
-            '        ]]>\x3C/script>',
-            '    </svg>`;',
-            '    ',
-            '    return svg;',
-            '}',
-            '',
-            '// METODA 2: Unicode Private Use Area (najbardziej kompaktowa)',
-            'function embedUsingPUA(videoBytes) {',
-            '    // Mapuj każdy bajt na znak Unicode PUA',
-            '    const puaString = Array.from(videoBytes)',
-            '        .map(b => String.fromCharCode(0xE000 + b))',
-            '        .join(\'\');',
-            '    ',
-            '    // SVG z PUA (50% mniejszy niż hex!)',
-            '    return `<svg xmlns="http://www.w3.org/2000/svg">',
-            '        <metadata>${puaString}</metadata>',
-            '    </svg>`;',
-            '}',
-            '',
-            '// METODA 3: Base91 (tylko 23% overhead)',
-            '// Najlepsza metoda tekstowa - lepsza niż Base64!'
-        ].join('\n');
-        
-        codeDisplay.textContent = codeContent;
-        
-            // Initialize with test data
-            (function init() {
-            const testData = createTestVideoData();
-            
-            // Embed test data in Method 1
-            const hexData = encodeBinaryToHex(testData);
-            const binaryElement = document.querySelector('#svg-binary-container binary\\:data');
-            if (binaryElement) {
-                binaryElement.textContent = hexData;
+            // Get the SVG element
+            const svgElement = document.getElementById(svgId);
+            if (!svgElement) {
+                console.error('SVG element not found');
+                return;
             }
             
-            console.log('Test data embedded. Original:', testData.length, 'bytes');
-            console.log('Available extraction methods:');
-            console.log('- extractAndPlayMethod1() - Hex encoding');
-            console.log('- extractAndPlayMethod2() - Unicode PUA');
-            console.log('- extractAndPlayMethod3() - Base91');
-                console.log('- extractAndPlayMethod4() - Steganographic paths');
-            })();
-        }); // End of DOMContentLoaded
+            // Create a clone to avoid modifying the original
+            const clone = svgElement.cloneNode(true);
+            
+            // If this is the Base91 container, use the responsive template
+            if (svgId === 'svg-base91-container') {
+                const base91Data = clone.querySelector('#base91-video-data').textContent.trim();
+                
+                // Create a new SVG document
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(`
+                    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+                    <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+                    <svg id="svg-base91-container"
+                         xmlns="http://www.w3.org/2000/svg"
+                         xmlns:xlink="http://www.w3.org/1999/xlink"
+                         width="100%" 
+                         height="100%"
+                         viewBox="0 0 100 100"
+                         preserveAspectRatio="xMidYMid meet"
+                         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; border: none; background: #000;"
+                         onload="initBase91Player()">
+                        <!-- Fullscreen background -->
+                        <rect width="100%" height="100%" fill="#0a0a0a"/>
+                        <!-- Header -->
+                        <text x="50" y="5" text-anchor="middle" fill="#0f0" font-size="3" font-family="Arial, sans-serif">
+                            Base91 Encoded Video (23% overhead)
+                        </text>
+                        <!-- Video player container -->
+                        <foreignObject x="5" y="8" width="90" height="87" class="video-container">
+                            <div xmlns="http://www.w3.org/1999/xhtml" style="width: 100%; height: 100%; position: relative;">
+                                <video id="svg-video-player" 
+                                       style="display: none; width: 100%; height: 100%; object-fit: contain;"
+                                       controls>
+                                    Your browser does not support the video tag.
+                                </video>
+                                <div id="status-message" style="
+                                    position: absolute;
+                                    top: 50%;
+                                    left: 50%;
+                                    transform: translate(-50%, -50%);
+                                    color: #0f0; 
+                                    text-align: center; 
+                                    font-family: Arial, sans-serif;
+                                    font-size: 1.5vmin;
+                                    background: rgba(0,0,0,0.7);
+                                    padding: 1vmin 2vmin;
+                                    border-radius: 0.5vmin;
+                                    white-space: nowrap;">
+                                    Loading video...
+                                </div>
+                                <!-- Fullscreen toggle button -->
+                                <button id="fullscreen-btn" 
+                                        onclick="toggleFullScreen()"
+                                        style="
+                                            position: absolute;
+                                            bottom: 10px;
+                                            right: 10px;
+                                            background: rgba(0,0,0,0.7);
+                                            border: 1px solid #0f0;
+                                            color: #0f0;
+                                            padding: 5px 10px;
+                                            border-radius: 3px;
+                                            cursor: pointer;
+                                            font-size: 1.2vmin;
+                                            z-index: 10;">
+                                    Toggle Fullscreen
+                                </button>
+                            </div>
+                        </foreignObject>
+                        <defs>
+                            <script id="base91-video-data" type="application/octet-stream"><![CDATA[${base91Data}]]></script>
+                            
+                            <!-- Base91 Decoder Script -->
+                            <script type="text/javascript">
+                            //<![CDATA[
+                            class Base91 {
+                                constructor() {
+                                    this.alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$%&()*+,./:;<=>?@[]^_`{|}~"';
+                                    this.decode_table = {};
+                                    for (let i = 0; i < this.alphabet.length; i++) {
+                                        this.decode_table[this.alphabet[i]] = i;
+                                    }
+                                }
+                                
+                                encode(data) {
+                                    // Implementation of Base91 encoding
+                                    let v = 0, b = 0, n = 0;
+                                    let output = '';
+                                    
+                                    for (let i = 0; i < data.length; i++) {
+                                        b = (b << 8) | (data[i] & 0xff);
+                                        n += 8;
+                                        
+                                        while (n >= 13) {
+                                            v = b >>> (n - 13);
+                                            output += this.alphabet[v / 91] + this.alphabet[v % 91];
+                                            n -= 13;
+                                            b &= ~(v << (n));
+                                        }
+                                    }
+                                    
+                                    if (n > 0) {
+                                        output += this.alphabet[Math.floor(b / 91)];
+                                        if (n > 7 || b % 91 > 0) {
+                                            output += this.alphabet[b % 91];
+                                        }
+                                    }
+                                    
+                                    return output;
+                                }
+                                
+                                decode(str) {
+                                    let v = -1, b = 0, n = 0;
+                                    const out = [];
+                                    
+                                    for (let i = 0; i < str.length; i++) {
+                                        const c = str.charAt(i);
+                                        if (!(c in this.decode_table)) continue;
+                                        
+                                        const cval = this.decode_table[c];
+                                        if (v < 0) {
+                                            v = cval;
+                                        } else {
+                                            v += cval * 91;
+                                            b |= v << n;
+                                            n += (v & 8191) > 88 ? 13 : 14;
+                                            do {
+                                                out.push(b & 0xff);
+                                                b >>= 8;
+                                                n -= 8;
+                                            } while (n > 7);
+                                            v = -1;
+                                        }
+                                    }
+                                    
+                                    if (v + 1) {
+                                        out.push((b | v << n) & 0xff);
+                                    }
+                                    
+                                    return new Uint8Array(out);
+                                }
+                            }
+                            
+                            // Fullscreen toggle function
+                            function toggleFullScreen() {
+                                const video = document.getElementById('svg-video-player');
+                                if (!document.fullscreenElement) {
+                                    if (video.requestFullscreen) {
+                                        video.requestFullscreen();
+                                    } else if (video.webkitRequestFullscreen) {
+                                        video.webkitRequestFullscreen();
+                                    } else if (video.msRequestFullscreen) {
+                                        video.msRequestFullscreen();
+                                    }
+                                } else {
+                                    if (document.exitFullscreen) {
+                                        document.exitFullscreen();
+                                    } else if (document.webkitExitFullscreen) {
+                                        document.webkitExitFullscreen();
+                                    } else if (document.msExitFullscreen) {
+                                        document.msExitFullscreen();
+                                    }
+                                }
+                            }
+                            
+                            // Initialize the player when the SVG loads
+                            function initBase91Player() {
+                                const statusElement = document.getElementById('status-message');
+                                const video = document.getElementById('svg-video-player');
+                                
+                                try {
+                                    // Get the Base91 data from the script tag
+                                    const dataScript = document.getElementById('base91-video-data');
+                                    if (!dataScript) {
+                                        throw new Error('Video data not found');
+                                    }
+                                    
+                                    const base91Data = dataScript.textContent.trim();
+                                    if (!base91Data) {
+                                        throw new Error('No video data found');
+                                    }
+                                    
+                                    // Create a new instance of the Base91 decoder
+                                    const base91 = new Base91();
+                                    
+                                    // Decode the video data
+                                    const binaryData = base91.decode(base91Data);
+                                    const blob = new Blob([binaryData], { type: 'video/mp4' });
+                                    const videoUrl = URL.createObjectURL(blob);
+                                    
+                                    // Set up the video element
+                                    video.src = videoUrl;
+                                    video.style.display = 'block';
+                                    
+                                    // Handle video loading
+                                    video.oncanplay = function() {
+                                        statusElement.textContent = 'Ready to play';
+                                        video.play().catch(e => {
+                                            statusElement.textContent = 'Click to play (autoplay blocked)';
+                                            video.controls = true;
+                                        });
+                                    };
+                                    
+                                    video.onerror = function() {
+                                        statusElement.textContent = 'Error loading video';
+                                        console.error('Video loading error');
+                                    };
+                                    
+                                } catch (e) {
+                                    statusElement.textContent = 'Error: ' + e.message;
+                                    console.error('Player error:', e);
+                                }
+                            }
+                            
+                            // Initialize when the SVG is loaded
+                            if (document.readyState === 'loading') {
+                                document.addEventListener('DOMContentLoaded', initBase91Player);
+                            } else {
+                                initBase91Player();
+                            }
+                            //]]>
+                            </script>
+                        </defs>
+                    </svg>
+                `, 'image/svg+xml');
+                
+                // Serialize the SVG document to a string
+                const serializer = new XMLSerializer();
+                let svgString = serializer.serializeToString(doc.documentElement);
+                
+                // Create and trigger download
+                const blob = new Blob([svgString], { type: 'image/svg+xml' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename.endsWith('.svg') ? filename : `${filename}.svg`;
+                document.body.appendChild(a);
+                a.click();
+                
+                // Clean up
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 0);
+                
+                return;
+            }
+            
+            // Add the downloadSVG function to the window object
+            window.downloadSVG = downloadSVG;
+        });
     </script>
 </body>
 </html>
